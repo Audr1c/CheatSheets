@@ -1,0 +1,5 @@
+# Fins de ligne normalisées (projet utilisé sous Linux et Windows)
+* text=auto
+Makefile text eol=lf
+*.pdf binary
+*.png binary

@@ -1,0 +1,225 @@
+% Librairie des fiches pratiques : « éditeur de code », palette Monokai Pro Light (assombrie
+% pour l'impression), contrastes forts (cadres sombres, titres gras). Police Hurmit Nerd Font.
+% A4 paysage, 3 colonnes justifiées par page.
+%
+% Tout ce qui est commun à toutes les fiches est ici (police, page, couleurs, code, barre
+% d'en-tête, encadrés, tableaux, colonnes, espacements) : une modification ici change
+% toutes les fiches. Ce qui est propre à une fiche (couleur et icône de la barre, légende,
+% catégories, macros visuelles particulières) est dans librairie/theme-<nom>.tex.
+%
+% Utilisation, depuis le dossier d'une fiche :
+%   \documentclass{article}
+%   \usepackage[<thème>]{../librairie/fiche}    % thèmes : c git python verilog uvm vhdl
+%   \input{langage}                              % \lstdefinelanguage{CODE}{...}
+% Interface pour la fiche :
+%   \entete{titre}{sous-titre} · colonne[branche][couleur] (3 par page) · \colbreak
+%   bloc / blocfin{titre}{catégorie} · code · \V|...| · «...» dans le code = à remplir
+%   \sub · \note · \piege · \badge{TXT} · optab[l1] · tab3[l1]{l2} · typetab
+% Rapport dans le .log :  [fiche] colonne N : libre X mm  (négatif = déborde)
+%                         [bloc] titre : hauteur X mm
+
+% chargé par un chemin relatif (../librairie/fiche) : on se déclare sous ce nom-là
+\ProvidesPackage{\@currpath\@currname}[2026/10/24 Fiches pratiques]
+\edef\fiche@dir{\@currpath}   % dossier de la librairie, pour charger le thème
+\def\fiche@theme{c}
+\DeclareOption*{\edef\fiche@theme{\CurrentOption}}
+\ProcessOptions\relax
+
+% --- Page et paquets ---
+\RequirePackage[a4paper,landscape,margin=7mm]{geometry}
+\RequirePackage{fontspec}
+\RequirePackage[table]{xcolor}
+\RequirePackage{array,listings,tikz,varwidth}
+\usetikzlibrary{positioning,arrows.meta,calc,fit}
+\RequirePackage[most]{tcolorbox}
+\pagestyle{empty}
+\setlength\parindent{0pt}
+
+% --- Police ---
+\setmainfont{Hurmit Nerd Font}[Ligatures=TeXOff]   % ' reste droit (pas de ’ dans Hurmit)
+\setmonofont{Hurmit Nerd Font Mono}
+\newfontfamily\iconfont{Hurmit Nerd Font}
+\newcommand\icone[1]{{\iconfont\symbol{"#1}}}   % glyphe Nerd Font par code hexa
+\newcommand\fontbloc{\fontsize{6.95}{8.3}\selectfont}                 % texte des blocs
+\newcommand\fontonglet{\bfseries\fontsize{7.4}{8.4}\selectfont}       % titre des blocs
+\newcommand\fontcode{\ttfamily\fontsize{6.55}{7.75}\selectfont}       % listings
+\newcommand\fontcodeligne{\ttfamily\fontsize{6.75}{7.9}\selectfont}   % \V|...|
+\newcommand\fontnumero{\ttfamily\fontsize{4.7}{7.75}\selectfont}      % numéros de ligne
+\newcommand\fonttitre{\bfseries\fontsize{12}{12}\selectfont}          % titre de la barre
+\newcommand\fontsoustitre{\fontsize{7}{7}\selectfont}                 % sous-titre de la barre
+\newcommand\fontlegende{\fontsize{6.6}{6.6}\selectfont}               % légende de la barre
+\newcommand\fontbadge{\ttfamily\bfseries\fontsize{4.8}{4.8}\selectfont}
+
+% --- Couleurs (Monokai Pro Light) ---
+\definecolor{ink}{HTML}{29242A}       % texte
+\definecolor{trait}{HTML}{3B3539}     % cadres
+\definecolor{paper}{HTML}{F4EFED}     % fond des onglets et de la barre
+\definecolor{mk-pink}{HTML}{E14775}
+\definecolor{mk-orange}{HTML}{E16032}
+\definecolor{mk-yellow}{HTML}{C47208}
+\definecolor{mk-green}{HTML}{218C5D}
+\definecolor{mk-cyan}{HTML}{1A7F99}
+\definecolor{mk-purple}{HTML}{6A51B8}
+\definecolor{mk-grey}{HTML}{857F81}   % commentaires
+\definecolor{gutter}{HTML}{B5AEB0}    % numéros de ligne
+% catégories (liseré de l'onglet, sous-titres) : définies par le thème, \colorlet{cat-xxx}{..}
+\colorlet{cat}{ink}
+
+% --- Code ---
+% classes de mots-clés du langage CODE : [1] mots-clés · [2] types · [3] intégrés · [4] au choix
+\colorlet{code-kw4}{mk-orange}
+\lstdefinestyle{base}{language=CODE,
+  basicstyle=\fontcode\color{ink},
+  keywordstyle=[1]\color{mk-pink}\bfseries,
+  keywordstyle=[2]\color{mk-cyan}\bfseries,
+  keywordstyle=[3]\color{mk-green}\bfseries,
+  keywordstyle=[4]\color{code-kw4}\bfseries,
+  commentstyle=\color{mk-grey}\itshape,
+  stringstyle=\color{mk-yellow},
+  moredelim=[is][\color{mk-purple}\itshape]{«}{»},
+  columns=fullflexible, keepspaces=true, showstringspaces=false, upquote=true}
+\lstdefinestyle{code}{style=base, aboveskip=1.5pt, belowskip=1.5pt,
+  numbers=left, numberstyle=\color{gutter}\fontnumero,
+  numbersep=2mm, xleftmargin=3.4mm}
+\lstdefinestyle{inl}{style=base, basicstyle=\fontcodeligne\color{ink}}
+\lstnewenvironment{code}{\lstset{style=code}}{}
+\newcommand\V{\lstinline[style=inl]}
+
+% --- Dimensions et espacements ---
+\newlength\barreh  \setlength\barreh{8mm}      % hauteur de la barre d'en-tête
+\newlength\barregap \setlength\barregap{1.5mm} % espace sous la barre
+\newlength\colh   \setlength\colh{\dimexpr\textheight-\barreh-\barregap-0.3mm\relax}
+\newlength\colsep \setlength\colsep{4mm}       % entre deux colonnes
+\newlength\colw   \setlength\colw{\dimexpr(\textwidth-2\colsep)/3\relax}
+\newlength\tabh   \setlength\tabh{4.4mm}       % hauteur de l'onglet des blocs
+\newlength\gapbloc \setlength\gapbloc{\dimexpr\tabh+2.2mm\relax}  % espace minimal entre deux blocs
+
+% --- Barre d'en-tête ---
+% Le thème choisit le modèle (\entete = \entetecouleur ou \entetefenetre) et le règle :
+%   couleurs barre-fond, barre-bord, barre-icone, barre-sep · \iconebarre{code hexa}
+%   \tailleiconebarre · \legende{...} · \decorbarre (TikZ en plus, nœuds titre, sous, leg)
+\colorlet{barre-fond}{paper}
+\colorlet{barre-bord}{trait}
+\colorlet{barre-icone}{white}
+\colorlet{barre-sep}{gutter}
+\newcommand\iconebarre{}            % vide = pas d'icône
+\newcommand\tailleiconebarre{11}
+\newcommand\decorbarre{}
+\newlength\barrey  \setlength\barrey{0.5\barreh}  % hauteur de la ligne de texte
+\newcommand\leg[2]{{\ttfamily\bfseries\color{#1}#2}}            % entrée de légende
+\newcommand\legit[2]{{\ttfamily\itshape\color{#1}#2}}           % entrée de légende, italique
+\newcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{intégré} \
+  \legit{mk-grey}{// commentaire} \ \legit{mk-purple}{«à remplir»}}
+\newcommand\fiche@cadrebarre{%
+  \draw[barre-bord,fill=barre-fond,line width=0.8pt,rounded corners=1.8mm]
+    (0.4pt,0.4pt) rectangle (\linewidth-0.4pt,\barreh-0.4pt);}
+\newcommand\fiche@finbarre{\par\vspace{\barregap}\nointerlineskip}
+% modèle « barre colorée » : icône + titre blancs, légende dans une pastille blanche à droite
+\newcommand\entetecouleur[2]{%
+  \noindent\begin{tikzpicture}
+    \fiche@cadrebarre
+    \node[anchor=west,inner sep=0pt,text=white] (titre) at (4mm,\barrey)
+      {\if\relax\detokenize\expandafter{\iconebarre}\relax\else
+         {\color{barre-icone}\fontsize{\tailleiconebarre}{\tailleiconebarre}\selectfont
+          \icone{\iconebarre}}\hspace{1.8mm}\fi
+       \fonttitre #1};
+    \node[anchor=west,inner sep=0pt,text=white,font=\fontsoustitre] (sous) at ([xshift=5mm]titre.east)
+      {\textcolor{barre-sep}{│}\quad #2};
+    \node[anchor=east,fill=white,draw=barre-bord,line width=0.6pt,rounded corners=1.2mm,
+          inner xsep=2mm,inner ysep=1.1mm,font=\fontlegende] (leg) at (\linewidth-1.6mm,\barrey)
+      {\legende};
+    \decorbarre
+  \end{tikzpicture}\fiche@finbarre}
+% modèle « fenêtre » : fond clair, trois pastilles, sous-titre et légende à droite
+\newcommand\entetefenetre[2]{%
+  \noindent\begin{tikzpicture}
+    \fiche@cadrebarre
+    \foreach \c/\x in {mk-pink/4, mk-yellow/8, mk-green/12}
+      \fill[\c] (\x mm,\barrey) circle (1.4mm);
+    \node[anchor=west,inner sep=0pt,text=ink] (titre) at (17mm,\barrey) {\fonttitre #1};
+    \node[anchor=east,inner sep=0pt,font=\fontlegende,text=ink] (leg) at (\linewidth-4mm,\barrey)
+      {#2 \quad\textcolor{barre-sep}{│}\quad \legende};
+    \decorbarre
+  \end{tikzpicture}\fiche@finbarre}
+\let\entete\entetecouleur
+
+% --- Encadrés : onglet de fichier posé sur un cadre sombre ---
+% L'onglet est dessiné au-dessus du cadre (overlay) : il ne prend pas de place,
+% l'espace est réservé par \tabh (en haut de colonne) et \gapbloc (entre les blocs).
+% Réglages du thème : \iconebloc{cat} (icône de l'onglet) · \stylebloc (ajouté à la police)
+%   · \decorbloc (TikZ en plus dans l'overlay, nœuds frame et onglet)
+\newcommand\iconebloc[1]{\icone{F1C9}}
+\newcommand\stylebloc{}
+\newcommand\decorbloc{}
+\newlength\colused   % hauteur déjà occupée dans la colonne courante
+\newsavebox\blocsave
+\newtcolorbox{blocbox}[3][]{enhanced, sharp corners, colback=white, colframe=trait,
+  boxrule=0.8pt, left=1.5mm, right=1.5mm, top=1mm, bottom=1mm,
+  before skip=0pt, after skip=0pt,
+  before upper={\colorlet{cat}{cat-#3}},
+  fontupper=\fontbloc\color{ink}\stylebloc,
+  overlay={\node[anchor=south west, draw=trait, fill=paper, line width=0.8pt,
+      minimum height=\tabh, inner xsep=1.6mm, inner ysep=0pt, text=ink,
+      text height=1.9mm, text depth=0.55mm, font=\fontonglet]
+      (onglet) at ([yshift=-0.4pt]frame.north west) {\iconebloc{#3}\enspace#2};
+    \fill[cat-#3] ([xshift=0.4pt,yshift=-0.4pt]onglet.north west)
+                  rectangle ([xshift=-0.4pt,yshift=-1.9pt]onglet.north east);
+    \decorbloc},
+  #1}
+% Colonnes « justifiées » : chaque bloc garde sa taille naturelle, le premier est en haut,
+% le dernier en bas, et les espaces entre blocs s'étirent tous de la même façon.
+\NewDocumentEnvironment{bloc}{mm}{\begin{lrbox}{\blocsave}\begin{blocbox}{#1}{#2}}{%
+  \end{blocbox}\end{lrbox}%
+  \global\advance\colused by \dimexpr\ht\blocsave+\dp\blocsave+\gapbloc\relax
+  \typeout{[bloc] \unexpanded{#1} : \fpeval{round((\the\dimexpr\ht\blocsave+\dp\blocsave\relax)/1mm,1)} mm}%
+  \par\nointerlineskip\noindent\usebox\blocsave\par
+  \vskip\dimexpr\gapbloc\relax plus 1fill}
+\NewDocumentEnvironment{blocfin}{mm}{\begin{bloc}{#1}{#2}}{\end{bloc}}  % ancien nom, identique
+
+\newcommand\sub[1]{\par\vspace{2pt}{\ttfamily\bfseries\color{cat}// #1}\par\vspace{0.5pt}}
+\newcommand\note{\textcolor{ink!68}}
+\newcommand\piege[1]{\par\vspace{2pt}{\color{mk-orange}\icone{F071}\ \bfseries warning:}\ #1}
+% petit badge encadré, ex. \badge{SV}, \badge{C++17}, \badge{v3.10}
+\newcommand\badge[1]{\tikz[baseline=(s.base)]\node[draw=mk-cyan,text=mk-cyan,rounded corners=1pt,
+  line width=0.5pt,inner xsep=1pt,inner ysep=0.6pt,font=\fontbadge](s){#1};}
+
+% --- Tableaux (colonnes alignées) ---
+\newcommand\tabsetup{\arrayrulecolor{black!14}\renewcommand\arraystretch{1.1}}
+% optab[l1] : étiquette | contenu
+\newenvironment{optab}[1][15mm]{\par\tabsetup
+  \begin{tabular}{@{}>{\raggedright\arraybackslash\bfseries}p{#1}@{\hspace{1.5mm}}%
+                     >{\raggedright\arraybackslash}p{\dimexpr\linewidth-#1-1.5mm}@{}}}%
+  {\end{tabular}\par}
+% tab3[l1]{l2} : étiquette | code | remarque
+\newenvironment{tab3}[2][15mm]{\par\tabsetup
+  \begin{tabular}{@{}>{\raggedright\arraybackslash\bfseries}p{#1}@{\hspace{1.5mm}}%
+                     >{\raggedright\arraybackslash}p{#2}@{\hspace{1.5mm}}%
+                     >{\raggedright\arraybackslash\leavevmode\color{ink!72}}p{\dimexpr\linewidth-#1-#2-3mm}@{}}}%
+  {\end{tabular}\par}
+% typetab : type | états | bits | signe | remarque
+\newenvironment{typetab}{\par\tabsetup
+  \begin{tabular}{@{}l@{\hspace{2.5mm}}c@{\hspace{2.5mm}}c@{\hspace{2.5mm}}l@{\hspace{2.5mm}}l@{}}
+  \textbf{type} & \textbf{états} & \textbf{bits} & \textbf{signe} & \\\hline}%
+  {\end{tabular}\par}
+
+% --- Colonnes : 3 par page, même hauteur, blocs répartis verticalement ---
+% colonne[a][b] : les deux arguments optionnels sont passés à \debutcolonne{a}{b},
+% que le thème peut redéfinir (ex. Git : nom et couleur de la branche).
+\newcommand\debutcolonne[2]{}
+\newcounter{col}
+\NewDocumentEnvironment{colonne}{O{}O{}}{\stepcounter{col}%
+  \begin{minipage}[b][\colh][s]{\colw}\global\colused=\tabh
+  \debutcolonne{#1}{#2}\vspace*{\tabh}}%
+  {\par\unskip\vskip 0pt plus 1fil\kern0pt\rapportcolonne\end{minipage}}  % fil < fill : sert seulement s'il n'y a qu'un bloc
+\newcommand\colbreak{\hspace{\colsep}}
+\newcommand\rapportcolonne{%
+  \global\advance\colused by -\gapbloc   % pas d'espace après le dernier bloc
+  \typeout{[fiche] colonne \thecol\space : libre
+    \fpeval{round((\the\dimexpr\colh-\colused\relax)/1mm,1)} mm}%
+  \ifdim\colused>\colh
+    \PackageWarningNoLine{fiche}{Colonne \thecol\space déborde de
+      \fpeval{round((\the\dimexpr\colused-\colh\relax)/1mm,1)} mm}%
+  \fi}
+
+% --- Thème de la fiche ---
+\input{\fiche@dir theme-\fiche@theme}
