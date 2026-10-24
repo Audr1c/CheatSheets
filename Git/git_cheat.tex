@@ -1,0 +1,561 @@
+% Fiche Git — recto-verso A4 paysage
+% Source : git_guide_prafait.md (branches, rebase, cherry-pick, squash, reset/revert,
+%   renommage, worktree) — repris, corrigé et complété (zones, remote, stash, reflog...).
+% Compiler : make (ici ou à la racine), ou xelatex git_cheat.tex — une seule passe suffit
+% Apparence : ../librairie (fiche.sty commun + theme-git.tex). Macros de contenu :
+%   colonne[branche][couleur] (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : base his br rem rw und (couleurs dans le thème)
+%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
+%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+%   graphe : mini-graphe de commits (styles c cm cg b ref head tag lab fl zone, voir ../librairie/theme-git.tex)
+% Le code est en police à chasse fixe : les commentaires sont alignés à la main
+% (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
+% Après compilation : grep "\[fiche\]" git_cheat.log donne l'espace libre par colonne.
+\documentclass{article}
+\usepackage[git]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-git.tex
+\input{langage}   % coloration syntaxique : \lstdefinelanguage{CODE}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                         RECTO : LES COMMANDES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\entete{Git}{recto · les commandes}
+\noindent
+% ======================= colonne 1 : les bases =======================
+\begin{colonne}[main][git-orange]
+\begin{bloc}{Les 4 zones}{base}
+\begin{graphe}
+  \node[zone] (w) at (0,0)  {Dossier\\de travail};
+  \node[zone] (i) at (4,0)  {Index\\(staging)};
+  \node[zone] (l) at (8,0)  {Dépôt local\\.git};
+  \node[zone] (r) at (12,0) {Dépôt distant\\origin};
+  \draw[fl] (w.north) to[bend left=32] node[cmd,above]{add}    (i.north);
+  \draw[fl] (i.north) to[bend left=32] node[cmd,above]{commit} (l.north);
+  \draw[fl] (l.north) to[bend left=32] node[cmd,above]{push}   (r.north);
+  \draw[fl] (i.south) to[bend left=32] node[cmd,below]{restore}          (w.south);
+  \draw[fl] (l.south) to[bend left=32] node[cmd,below]{restore --staged} (i.south);
+  \draw[fl] (r.south) to[bend left=32] node[cmd,below]{fetch}            (l.south);
+  \draw[fl] ([xshift=3mm]r.south) to[bend left=24]
+     node[cmd,below]{pull = fetch + merge} ([xshift=-3mm]w.south);
+\end{graphe}
+\begin{tab3}[20mm]{20.5mm}
+\V|diff|          & dossier/index & pas encore indexé \\
+\V|diff --staged| & index/HEAD    & ce que prendra le commit \\
+\V|diff HEAD|     & dossier/HEAD  & tout ce qui a changé
+\end{tab3}
+\note{HEAD = le commit sur lequel on est (en général le bout de la branche courante).}
+\end{bloc}
+
+\begin{bloc}{Configurer et démarrer}{base}
+\begin{code}
+git config --global user.name "«Prénom Nom»"
+git config --global user.email «mail»
+git config --global init.defaultBranch main
+git config --global core.editor "code --wait"
+git config --list --show-origin  # qui définit quoi
+git init                         # nouveau dépôt ici
+git clone «url» «dossier»            # copie + remote origin
+\end{code}
+\sub{.gitignore (à la racine, commité)}
+\begin{code}
+build/     # un dossier
+*.log      # un motif
+!keep.log  # une exception
+\end{code}
+\note{Fichier déjà suivi : \V|git rm --cached «f»| puis commit, sinon il reste suivi.}
+\end{bloc}
+
+\begin{bloc}{Enregistrer}{base}
+\begin{code}
+git status -sb                # état court + branche
+git add «fichier»               # dossier -> index
+git add -p                    # morceau par morceau
+git add -A                    # tout : ajouts, suppr.
+git commit -m "«message»"     # index -> commit
+git commit -am "«message»"    # add des suivis + commit
+git commit --amend --no-edit  # compléter le dernier
+git restore «fichier»           # jeter les modifs
+git restore --staged «fichier»  # désindexer
+git rm «fichier»                # supprimer (suivi)
+git mv «ancien» «nouveau»         # renommer (suivi)
+\end{code}
+\note{Un commit = une idée, avec un message court à l'impératif, ex. \V|"Fix FIFO full flag"|.}
+\end{bloc}
+
+\begin{bloc}{Trouver le commit fautif (bisect)}{his}
+\begin{code}
+git bisect start
+git bisect bad        # la version actuelle bugue
+git bisect good v1.0  # celle-ci marchait
+# git extrait le milieu : tester, puis good / bad
+git bisect reset      # fin : retour à HEAD
+\end{code}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : branches =======================
+\begin{colonne}[feat/branches][mk-green]
+\begin{bloc}{Désigner un commit}{his}
+\begin{graphe}
+  \node[c=git-orange]  (a) at (0,0) {};
+  \node[c=git-orange]  (b) at (2,0) {};
+  \node[c=git-orange]  (c) at (4,0) {};
+  \node[cm=git-orange] (d) at (6,0) {M};
+  \node[c=mk-green]    (e) at (4,1.5) {};
+  \draw[b=git-orange] (a) -- (b) -- (c) -- (d);
+  \draw[b=mk-green] (b) |- (e);  \draw[b=mk-green] (e) -| (d);
+  \node[hl,below=0.5mm of a] {HEAD\textasciitilde3};
+  \node[hl,below=0.5mm of b] {HEAD\textasciitilde2};
+  \node[hl,below=0.5mm of c] {HEAD\textasciitilde1};
+  \node[hl,below=0.5mm of d,font=\ttfamily\bfseries\fontsize{5.2}{5.2}\selectfont] {HEAD};
+  \node[hl,above=0.4mm of e] {HEAD\textasciicircum2};
+  \node[head,right=1mm of d] (h) {HEAD};
+  \node[ref=git-orange,right=0.8mm of h] {main};
+\end{graphe}
+\begin{optab}[17mm]
+\V|HEAD~2|      & 2 commits en arrière (1\textsuperscript{er} parent) \\
+\V|HEAD^2|      & 2\textsuperscript{e} parent d'un commit de fusion \\
+\V|a1b2c3d|     & hash abrégé (4 caractères min.) \\
+\V|origin/main| & copie locale de la branche distante \\
+\V|HEAD@{2}|    & où était HEAD il y a 2 mouvements \\
+\V|main..feat|  & commits de feat absents de main
+\end{optab}
+\end{bloc}
+
+\begin{bloc}{Branches}{br}
+\begin{code}
+git branch                    # liste (* = courante)
+git branch -a -vv             # + distantes et suivi
+git switch «b»                  # aller sur «b»
+git switch -c «b» «départ»        # créer + y aller
+git checkout -b «b»             # idem (ancienne forme)
+git branch -m «ancien» «nouveau»  # renommer
+git branch -d «b»               # suppr. si fusionnée
+git branch -D «b»               # forcer : travail perdu
+git push -u origin «b»          # publier + suivre
+git push origin --delete «b»    # suppr. sur origin
+\end{code}
+\note{Renommer sur origin : \V|--delete|, puis \V|push -u| la nouvelle.}
+\end{bloc}
+
+\begin{bloc}{Fusionner (merge)}{br}
+\begin{graphe}
+  % fast-forward
+  \node[c=git-orange] (a) at (0,0) {A};
+  \node[c=git-orange] (b) at (1.3,0) {B};
+  \node[c=mk-green]   (c) at (2.6,0) {C};
+  \node[c=mk-green]   (d) at (3.9,0) {D};
+  \draw[b=git-orange] (a) -- (b);  \draw[b=mk-green] (b) -- (c) -- (d);
+  \node[ref=git-orange,above=0.8mm of b,opacity=0.35] (m0) {main};
+  \node[ref=git-orange,above=0.8mm of d] (m1) {main};
+  \draw[fl,dashed] (m0) -- (m1);
+  \node[ref=mk-green,below=0.8mm of d] {feat};
+  \node[lab] at (1.95,-1.6) {fast-forward :\\main avance juste};
+  % 3 voies
+  \begin{scope}[xshift=30mm]
+  \node[c=git-orange]  (a) at (0,0)   {A};
+  \node[c=git-orange]  (b) at (1.3,0) {B};
+  \node[c=git-orange]  (e) at (2.6,0) {E};
+  \node[cm=git-orange] (m) at (5.2,0) {M};
+  \node[c=mk-green]    (c) at (2.6,1.5) {C};
+  \node[c=mk-green]    (d) at (3.9,1.5) {D};
+  \draw[b=git-orange] (a) -- (b) -- (e) -- (m);
+  \draw[b=mk-green] (b) |- (c);  \draw[b=mk-green] (c) -- (d) -| (m);
+  \node[ref=mk-green,above=0.8mm of d] {feat};
+  \node[ref=git-orange,right=0.8mm of m] {main};
+  \node[lab] at (2.6,-1.6) {3 voies : commit de\\fusion M à 2 parents};
+  \end{scope}
+\end{graphe}
+\begin{code}
+git switch main           # 1. aller sur la cible
+git merge feat            # 2. y fusionner feat
+git push origin main      # 3. publier
+git merge --no-ff feat    # M même si FF : trace
+git merge --ff-only feat  # refuser si pas FF
+git merge --squash feat   # 1 commit, sans lien
+git merge --abort         # annuler (conflit)
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Résoudre un conflit}{br}
+\begin{code}
+<<<<<<< HEAD
+assign y = a & b;              # côté branche courante
+=======
+assign y = a | b;              # côté qui arrive
+>>>>>>> feat
+git add «fichier»                # après édition : résolu
+git merge --continue           # ou rebase --continue
+git checkout --ours «fichier»    # garder notre version
+git checkout --theirs «fichier»  # garder la leur
+\end{code}
+\piege{dans un rebase, \V|--ours| = la base (main) et \V|--theirs| = vos commits : l'inverse du merge.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : distant =======================
+\begin{colonne}[origin/main][mk-cyan]
+\begin{bloc}{Historique}{his}
+\begin{code}
+git log --oneline --graph --all  # l'arbre complet
+git log -p «fichier»               # avec les diffs
+git log --author=«nom» --since=2.weeks
+git log main..feat               # ce que feat ajoute
+git show «hash»                    # détail d'un commit
+git diff «a» «b» -- «fichier»          # entre deux commits
+git blame «fichier»                # auteur de chaque ligne
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Dépôts distants}{rem}
+\begin{graphe}
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=git-orange] (b) at (1.3,0) {B};
+  \node[c=git-orange] (c) at (2.6,0) {C};
+  \node[c=mk-cyan]    (d) at (2.6,1.5) {D};
+  \node[c=mk-cyan]    (e) at (3.9,1.5) {E};
+  \draw[b=git-orange] (a) -- (b) -- (c);
+  \draw[b=mk-cyan] (b) |- (d);  \draw[b=mk-cyan] (d) -- (e);
+  \node[ref=git-orange,right=0.8mm of c] (rm) {main};
+  \node[ref=mk-cyan,right=0.8mm of e] (ro) {origin/main};
+  \node[lab,anchor=west] at ([xshift=1mm]rm.east) {main : 1 en avance (C à pousser)};
+  \node[lab,anchor=west] at ([xshift=1mm]ro.east) {main : 2 en retard (D, E à récupérer)};
+\end{graphe}
+\begin{code}
+git remote -v                # liste des distants
+git remote add origin «url»    # lier un dépôt
+git fetch                    # télécharger, sans fusion
+git pull                     # fetch + merge
+git pull --rebase            # fetch + rebase : linéaire
+git push                     # envoyer la branche suivie
+git push --force-with-lease  # après une réécriture
+git branch -u origin/«b»       # suivre une branche
+git remote prune origin      # oublier les suppr.
+\end{code}
+\note{\V|status| compare à \V|origin/main|, mis à jour seulement par \V|fetch|, \V|pull| ou un \V|push| réussi.
+Conseillé : \V|git config --global pull.rebase true|.}
+\piege{\V|--force| écrase le travail poussé par les autres, alors que \V|--force-with-lease| refuse si origin a bougé depuis votre fetch.}
+\end{bloc}
+
+\begin{bloc}{Mettre de côté (stash)}{base}
+\begin{code}
+git stash                     # range tout, revient à HEAD
+git stash push -u -m "«msg»"  # + non suivis, nommé
+git stash list                # stash@{0}, stash@{1}...
+git stash pop                 # réapplique + supprime
+git stash apply stash@{1}     # réapplique, garde
+git stash drop stash@{0}      # supprime
+\end{code}
+\note{Pour changer de branche avec du travail en cours, ou faire un \V|pull| propre.}
+\end{bloc}
+
+\begin{bloc}{Branches en parallèle (worktree)}{rem}
+\begin{code}
+git worktree add ../projet-feat1 feat1  # sur feat1
+git worktree add ../projet-feat2 feat2  # autre, sur feat2
+git worktree add -b «b» ../«dossier»        # + nouv. branche
+git worktree list                       # les dossiers
+git worktree remove ../projet-feat1     # retirer
+\end{code}
+\note{Un seul \V|.git| partagé, un dossier par branche : plus de \V|switch| entre deux analyses.
+Idéal pour lancer la synthèse (Vivado, Design Compiler) de feat1 et feat2 en même temps et comparer aire et puissance.
+Sans branche, \V|worktree add ../rv32e-16regs| crée la branche \V|rv32e-16regs|.}
+\piege{une branche ne peut être extraite que dans un seul worktree à la fois.}
+\end{bloc}
+\end{colonne}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                VERSO : RÉÉCRIRE, ANNULER, ORGANISER
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\entete{Git}{verso · réécrire, annuler, organiser}
+\noindent
+% ======================= colonne 1 : rebase =======================
+\begin{colonne}[feat/rebase][mk-purple]
+\begin{bloc}{Rebaser une branche}{rw}
+\begin{graphe}
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=git-orange] (b) at (1.3,0) {B};
+  \node[c=git-orange] (e) at (2.6,0) {E};
+  \node[c=mk-purple]  (c) at (2.6,1.5) {C};
+  \node[c=mk-purple]  (d) at (3.9,1.5) {D};
+  \draw[b=git-orange] (a) -- (b) -- (e);
+  \draw[b=mk-purple] (b) |- (c);  \draw[b=mk-purple] (c) -- (d);
+  \node[ref=git-orange,below=0.8mm of e] {main};
+  \node[ref=mk-purple,below=0.8mm of d] {feat};
+  \draw[fl] (4.9,0.75) -- node[cmd,above]{rebase main} (7.4,0.75);
+  \begin{scope}[xshift=41mm]
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=git-orange] (b) at (1.3,0) {B};
+  \node[c=git-orange] (e) at (2.6,0) {E};
+  \node[c=mk-purple]  (c) at (3.9,0) {C'};
+  \node[c=mk-purple]  (d) at (5.2,0) {D'};
+  \node[cg] (c0) at (2.6,1.5) {C};
+  \node[cg] (d0) at (3.9,1.5) {D};
+  \draw[b=git-orange] (a) -- (b) -- (e);  \draw[b=mk-purple] (e) -- (c) -- (d);
+  \draw[b=gutter,dashed,line width=0.8pt] (b) |- (c0);  \draw[b=gutter,dashed,line width=0.8pt] (c0) -- (d0);
+  \node[ref=git-orange,below=0.8mm of e] {main};
+  \node[ref=mk-purple,below=0.8mm of d] {feat};
+  \end{scope}
+\end{graphe}
+\note{C, D rejoués après E : copies C', D' (nouveaux hash), historique linéaire.}
+\begin{code}
+git switch feat
+git rebase main              # rejoue feat sur main
+git rebase --continue        # conflit corrigé + add
+git rebase --skip            # sauter ce commit
+git rebase --abort           # tout annuler
+git push --force-with-lease  # feat déjà poussée
+\end{code}
+\note{Pendant un conflit HEAD est détachée : normal, \V|--continue| rattache la branche à la fin.
+Branche restée en arrière : \V|git switch -C feat| la force sur HEAD (= \V|checkout -B|).}
+\piege{après le rebase, pas de \V|git pull| : il refusionnerait les anciens C, D (doublons). Pousser avec \V|--force-with-lease|.}
+\end{bloc}
+
+\begin{bloc}{Branches empilées}{rw}
+\begin{graphe}
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=mk-purple]  (b) at (1.3,0) {B};
+  \node[c=mk-purple]  (f1) at (2.6,0) {1};
+  \node[c=mk-purple]  (f2) at (3.9,0) {2};
+  \node[c=mk-cyan]    (c) at (2.6,1.5) {C};
+  \node[c=mk-cyan]    (f3) at (3.9,1.5) {3};
+  \draw[b=git-orange] (a) -- (b);  \draw[b=mk-purple] (b) -- (f1) -- (f2);
+  \draw[b=mk-cyan] (b) |- (c);  \draw[b=mk-cyan] (c) -- (f3);
+  \node[ref=mk-purple,below=0.8mm of f2] {feat1};
+  \node[ref=mk-cyan,above=0.8mm of f3] {feat2};
+  \draw[fl] (4.9,0.75) -- node[cmd,above]{rebase feat1} (7.4,0.75);
+  \begin{scope}[xshift=41mm]
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=mk-purple]  (b) at (1.3,0) {B};
+  \node[c=mk-purple]  (f1) at (2.6,0) {1};
+  \node[c=mk-purple]  (f2) at (3.9,0) {2};
+  \node[c=mk-cyan]    (c) at (5.2,1.5) {C'};
+  \node[c=mk-cyan]    (f3) at (6.5,1.5) {3'};
+  \draw[b=git-orange] (a) -- (b);  \draw[b=mk-purple] (b) -- (f1) -- (f2);
+  \draw[b=mk-cyan] (f2) |- (c);  \draw[b=mk-cyan] (c) -- (f3);
+  \node[ref=mk-purple,below=0.8mm of f2] {feat1};
+  \node[ref=mk-cyan,below=0.8mm of f3] {feat2};
+  \end{scope}
+\end{graphe}
+\note{feat2 partait de feat1 avant fix 1 et 2 : on la recale.}
+\begin{code}
+git switch feat2
+git rebase feat1                    # repart de feat1
+# au choix, à la place :
+git rebase --onto main feat1 feat2  # feat2 seule sur main
+git rebase --update-refs main       # tout, feat1 suit
+\end{code}
+\note{\V|--update-refs| \badge{2.38} déplace toutes les branches posées sur les commits rejoués.}
+\end{bloc}
+
+\begin{bloc}{Rebase interactif : nettoyer}{rw}
+\begin{code}
+git rebase -i HEAD~3  # les 3 derniers commits
+\end{code}
+\sub{l'éditeur : plus ancien en haut, déplacer = réordonner}
+\begin{code}
+pick a1b2c3d Add FIFO
+squash e4f5a6b Fix FIFO full flag  # fondu au précédent
+fixup c7d8e9f typo                 # idem, message jeté
+\end{code}
+\begin{optab}[12mm]
+\V|pick|   & garder tel quel \\
+\V|reword| & garder, changer le message \\
+\V|edit|   & s'arrêter pour \V|commit --amend|, puis \V|--continue| \\
+\V|squash| & fondre dans le précédent, messages réunis \\
+\V|fixup|  & idem, garde le message du précédent \\
+\V|drop|   & supprimer le commit (ou effacer la ligne)
+\end{optab}
+\begin{graphe}
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=mk-purple]  (b) at (1.3,0) {B};
+  \node[c=mk-purple]  (c) at (2.6,0) {C};
+  \node[c=mk-purple]  (d) at (3.9,0) {D};
+  \draw[b=git-orange] (a) -- (b);  \draw[b=mk-purple] (b) -- (c) -- (d);
+  \draw[fl] (5,0) -- node[cmd,above]{squash} (7.2,0);
+  \node[c=git-orange] (a2) at (8.3,0) {A};
+  \node[cm=mk-purple] (s) at (9.6,0) {S};
+  \draw[b=git-orange] (a2) -- (s);
+  \node[lab,anchor=west] at ([xshift=1mm]s.east) {S = B + C + D};
+\end{graphe}
+\sub{plus rapide : marquer, puis ranger tout seul}
+\begin{code}
+git commit --fixup «hash»          # corrige «hash»
+git rebase -i --autosquash «base»  # fixup placés auto
+\end{code}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : annuler =======================
+\begin{colonne}[fix/annuler][mk-pink]
+\begin{bloc}{reset : reculer la branche}{und}
+\begin{graphe}
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=git-orange] (b) at (1.3,0) {B};
+  \node[cg]           (c) at (2.6,0) {C};
+  \draw[b=git-orange] (a) -- (b);  \draw[b=gutter,dashed,line width=0.8pt] (b) -- (c);
+  \node[ref=git-orange,above=0.8mm of c,opacity=0.35] (m0) {main};
+  \node[ref=git-orange,above=0.8mm of b] (m1) {main};
+  \draw[fl,dashed] (m0) -- (m1);
+  \node[lab,anchor=south west,align=left] at (3.5,-0.6)
+    {{\ttfamily\bfseries\color{mk-pink}reset HEAD\textasciitilde1} : main recule sur B ;\\
+     C n'est plus sur aucune branche (reflog)};
+\end{graphe}
+\par\tabsetup
+\begin{tabular}{@{}>{\raggedright\arraybackslash\bfseries}p{11mm}@{\hspace{1mm}}%
+  *3{>{\centering\arraybackslash}p{11mm}@{\hspace{1.5mm}}}%
+  >{\raggedright\arraybackslash\leavevmode\color{ink!72}}p{\dimexpr\linewidth-49.5mm\relax}@{}}
+            & branche & index & dossier & modifs de C \\ \hline
+\V|--soft|  & \oui & \non & \non & restent indexées \\
+\V|--mixed| & \oui & \oui & \non & restent, non indexées (défaut) \\
+\V|--hard|  & \oui & \oui & \oui & \textcolor{mk-pink}{\bfseries sont perdues}
+\end{tabular}
+\begin{code}
+git reset --soft HEAD~1    # défaire le commit
+git reset HEAD~1           # idem + désindexer
+git reset --hard HEAD~1    # tout effacer
+git reset --hard origin/«b»  # coller au distant
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Supprimer un commit}{und}
+\sub{pas encore poussé}
+\begin{optab}[14mm]
+dernier & \V|reset --soft HEAD~1| (garder) ou \V|--hard| (effacer) \\
+au milieu  & \V|rebase -i HEAD~N|, \V|drop| sur sa ligne
+\end{optab}
+\sub{déjà poussé}
+\begin{optab}[14mm]
+équipe & \V|git revert «hash»| puis \V|push| : un commit inverse, le passé reste intact \\
+perso  & \V|reset --hard HEAD~1| puis \V|push --force-with-lease|
+\end{optab}
+\begin{graphe}
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=git-orange] (b) at (1.3,0) {B};
+  \node[c=git-orange] (c) at (2.6,0) {C};
+  \node[cm=mk-pink]   (r) at (3.9,0) {-C};
+  \draw[b=git-orange] (a) -- (b) -- (c);  \draw[b=mk-pink] (c) -- (r);
+  \node[ref=git-orange,right=0.8mm of r] (m) {main};
+  \node[lab,anchor=west] at ([xshift=1mm]m.east) {{\ttfamily\bfseries\color{mk-pink}revert C} : -C annule C};
+\end{graphe}
+\sub{sur les autres machines, après une réécriture}
+\begin{code}
+git fetch
+git rebase --abort         # si un rebase traîne
+git reset --hard origin/«b»  # s'aligner sur origin
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Petites réparations}{und}
+\begin{code}
+git commit --amend -m "«msg»"  # mauvais message
+git add «oubli»                  # fichier oublié :
+git commit --amend --no-edit   # ... dans le dernier
+git restore --source=«hash» «f»    # un fichier ancien
+git revert -m 1 «hash-merge»     # annuler une fusion
+git clean -nd                  # non suivis : lister
+git clean -fd                  # ... et supprimer
+\end{code}
+\sub{commit fait sur la mauvaise branche}
+\begin{code}
+git branch «bonne»         # garder le commit ici
+git reset --hard HEAD~1  # l'ôter de la courante
+git switch «bonne»         # il y est
+\end{code}
+\note{\V|--amend| réécrit le commit : seulement s'il n'est pas encore poussé.}
+\end{bloc}
+
+\begin{bloc}{Filet de sécurité : reflog}{und}
+\begin{code}
+git reflog                  # HEAD@{0}, HEAD@{1}...
+git reset --hard HEAD@{2}   # revenir avant l'erreur
+git branch rescue «hash»      # repêcher un commit
+git reset --hard ORIG_HEAD  # annuler reset/rebase
+\end{code}
+\note{Un commit « supprimé » reste environ 90 jours dans le reflog (local) : seul le jamais commité est perdu.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : organiser =======================
+\begin{colonne}[main][git-orange]
+\begin{bloc}{Copier un commit (cherry-pick)}{rw}
+\begin{graphe}
+  \node[c=git-orange] (a) at (0,0)   {A};
+  \node[c=git-orange] (b) at (1.3,0) {B};
+  \node[c=git-orange] (e) at (2.6,0) {E};
+  \node[cm=git-orange] (p) at (3.9,0) {3'};
+  \node[c=mk-purple]  (c) at (1.3,1.5) {C};
+  \node[c=mk-purple]  (f) at (2.6,1.5) {3};
+  \node[c=mk-purple]  (d) at (3.9,1.5) {D};
+  \draw[b=git-orange] (a) -- (b) -- (e) -- (p);
+  \draw[b=mk-purple] (a) |- (c);  \draw[b=mk-purple] (c) -- (f) -- (d);
+  \draw[fl,dashed,draw=mk-purple] (f) -- (p);
+  \node[ref=git-orange,right=0.8mm of p] (m) {main};
+  \node[ref=mk-purple,right=0.8mm of d] {feat};
+  \node[lab,anchor=west] at ([xshift=1mm]m.east) {3' = copie de fix 3};
+\end{graphe}
+\begin{code}
+git switch main
+git cherry-pick «hash-fix3»   # copie fix 3 sur main
+git cherry-pick -x «hash»     # + « cherry picked from »
+git cherry-pick «A»^..«B»       # une plage, A inclus
+git cherry-pick --continue  # après un conflit
+\end{code}
+\note{Nouveau commit, nouveau hash ; feat ne change pas. Au prochain \V|rebase main| de feat, git saute fix 3 (même patch).}
+\end{bloc}
+
+\begin{bloc}{Fichiers et dossiers}{base}
+\begin{code}
+git mv ancien_nom.v nouveau_nom.v  # renommer, suivi gardé
+git rm -r junk/                    # suppr. dépôt + disque
+git rm -r --cached build/          # ne plus suivre
+git commit -m "Remove junk folder"
+git switch feat1                   # propager sur feat1 :
+git rebase main                    # le renommage suit
+git log --follow «fichier»           # historique complet
+\end{code}
+\note{Renommage reconnu au contenu : au rebase, les modifs de feat1 sur l'ancien nom suivent.
+Le passé n'est pas réécrit : junk/ reste dans les anciens commits (pour alléger le dépôt : \V|git filter-repo|, qui réécrit tout).}
+\end{bloc}
+
+\begin{bloc}{Structure du projet}{br}
+\begin{graphe}[x=4.6mm]
+  \node[c=git-orange]  (p)  at (0,0)   {P};
+  \node[c=git-orange]  (t)  at (1.3,0) {T};
+  \node[c=git-orange]  (j)  at (2.6,0) {J};
+  \node[c=git-orange]  (w)  at (3.9,0) {W};
+  \node[cm=git-orange] (x)  at (5.2,0) {3'};
+  \node[c=mk-purple]   (fa) at (6.5,1.5) {a};
+  \node[c=mk-purple]   (f1) at (7.8,1.5) {1};
+  \node[c=mk-purple]   (f2) at (9.1,1.5) {2};
+  \node[c=mk-cyan]     (fb) at (10.4,3) {b};
+  \node[c=mk-cyan]     (f3) at (11.7,3) {3};
+  \draw[b=git-orange] (p) -- (t) -- (j) -- (w) -- (x);
+  \draw[b=mk-purple] (x) |- (fa);  \draw[b=mk-purple] (fa) -- (f1) -- (f2);
+  \draw[b=mk-cyan] (f2) |- (fb);  \draw[b=mk-cyan] (fb) -- (f3);
+  \node[ref=git-orange,right=0.8mm of x] {main};
+  \node[ref=mk-purple,right=0.8mm of f2] {feat1};
+  \node[ref=mk-cyan,right=0.8mm of f3] {feat2};
+  \node[tag,left=0.8mm of p] {\icone{F02B} project finish};
+  \node[tag,below=0.8mm of w] {\icone{F02B} no added features};
+  \node[tag,above=0.8mm of f1] {\icone{F02B} alpha works};
+  \node[tag,above=0.8mm of fb,xshift=-4mm] {\icone{F02B} beta};
+\end{graphe}
+\note{P repris · T prise en main · J junk/ supprimé · W adaptation OK · a, b features alpha, beta · 1–3 fix.}
+\begin{code}
+git switch feat1 && git rebase main      # suit main
+git switch feat2 && git rebase feat1     # suit feat1
+git push --force-with-lease origin feat1 feat2
+git tag -a alpha-works -m "«msg»" feat1  # marquer
+git push origin --tags                   # les tags à part
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Pièges}{und}
+\begin{optab}[19mm]
+Réécrire du partagé & rebase, amend, reset sur une branche où d'autres travaillent : ils devront \V|reset --hard origin/«b»|. \\
+Perte définitive & \V|reset --hard|, \V|restore|, \V|clean -f| effacent le non commité, sans reflog. \\
+HEAD détachée & les commits faits là ne sont sur aucune branche : \V|git switch -c «b»| avant de partir. \\
+Fichiers générés & build/, *.bit, ondes, rapports : dans \V|.gitignore| dès le début.
+\end{optab}
+\end{bloc}
+\end{colonne}
+\end{document}

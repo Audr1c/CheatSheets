@@ -1,0 +1,97 @@
+% Thème Git : barre orange Git avec petit graphe de commits décoratif, chaque colonne est
+% une branche (rail coloré, un commit sur chaque bloc), mini-graphes de commits en TikZ.
+% Utilisé par Git/git_cheat.tex.
+%   colonne[branche][couleur] · graphe (tikzpicture centrée) · \oui · \non
+
+% couleurs Git (logo) : orange F05032, brun foncé 3E2C00
+\definecolor{git-orange}{HTML}{F05032}
+\definecolor{git-dark}{HTML}{3E2C00}
+% catégories (liseré de l'onglet, sous-titres)
+\colorlet{cat-base}{git-orange}  % zones, enregistrer
+\colorlet{cat-his}{mk-yellow}    % historique, références
+\colorlet{cat-br}{mk-green}      % branches, fusion
+\colorlet{cat-rem}{mk-cyan}      % dépôts distants
+\colorlet{cat-rw}{mk-purple}     % réécrire l'historique
+\colorlet{cat-und}{mk-pink}      % annuler, réparer
+\colorlet{cat}{cat-base}
+\colorlet{rail}{git-orange}
+% code : [1] sous-commandes · [2] options · [3] refs · [4] git
+\colorlet{code-kw4}{git-orange}
+
+% --- Barre d'en-tête : orange Git, petit graphe de commits décoratif ---
+\colorlet{barre-fond}{git-orange}
+\colorlet{barre-bord}{git-dark}
+\colorlet{barre-sep}{white!65!git-orange}
+\renewcommand\iconebarre{E702}         % logo Git
+\renewcommand\tailleiconebarre{13}
+\renewcommand\legende{\leg{git-orange}{git} \ \leg{mk-pink}{commande} \ \leg{mk-cyan}{--option} \
+  \leg{mk-green}{ref} \ \legit{mk-grey}{\# commentaire} \ \legit{mk-purple}{«à remplir»}}
+% graphe décoratif entre le sous-titre et la légende : main + une branche qui part et revient
+\renewcommand\decorbarre{%
+  \coordinate (g0) at ([xshift=7mm]sous.east|-0,\barrey);
+  \coordinate (g1) at ([xshift=-7mm]leg.west);
+  \draw[white,line width=1pt] (g0) -- (g1);
+  \draw[white,line width=1pt,rounded corners=1.2mm]
+    ($(g0)!0.18!(g1)$) |- ($(g0)!0.36!(g1)+(0,2.1mm)$) -- ($(g0)!0.62!(g1)+(0,2.1mm)$) -| ($(g0)!0.76!(g1)$);
+  \draw[white!70!git-orange,line width=1pt,rounded corners=1.2mm]
+    ($(g0)!0.46!(g1)$) |- ($(g0)!0.58!(g1)+(0,-2.1mm)$) -- ($(g0)!0.92!(g1)+(0,-2.1mm)$);
+  \foreach \t in {0,0.18,0.32,0.46,0.6,0.76,0.88,1}
+    \fill[white] ($(g0)!\t!(g1)$) circle (0.85mm);
+  \foreach \t in {0.4,0.53,0.66}
+    \filldraw[fill=git-orange,draw=white,line width=0.7pt] ($(g0)!\t!(g1)+(0,2.1mm)$) circle (0.75mm);
+  \foreach \t in {0.7,0.82,0.92}
+    \filldraw[fill=git-orange,draw=white!70!git-orange,line width=0.7pt] ($(g0)!\t!(g1)+(0,-2.1mm)$) circle (0.75mm);}
+\let\entete\entetecouleur
+
+% --- Encadrés : icône de branche dans l'onglet, un commit du rail sur le bord haut ---
+\newlength\railx  \setlength\railx{5mm}   % rail de branche : distance au bord droit
+\renewcommand\iconebloc[1]{{\color{cat-#1}\icone{F418}}}
+% fer à gauche souple : pas de grands blancs autour du code en ligne
+\renewcommand\stylebloc{\rightskip=0pt plus 1fil\relax}
+\renewcommand\decorbloc{%
+  \filldraw[fill=white,draw=rail,line width=1.3pt] ([xshift=-\railx]frame.north east) circle (1.25mm);}
+
+% --- Colonnes : colonne[branche][couleur] ---
+% un rail vertical de la couleur donnée (git-orange par défaut) court le long du bord
+% droit (visible entre les blocs), l'étiquette de branche est posée en haut.
+\newcommand\rail[1]{\hbox to 0pt{\begin{tikzpicture}[overlay]
+    \draw[rail, line width=1.3pt] (\colw-\railx,-0.5\tabh) -- (\colw-\railx,-\colh+2mm);
+    \ifx\relax#1\relax\else
+      \node[ref=rail, anchor=east, font=\ttfamily\bfseries\fontsize{5.6}{5.6}\selectfont,
+            inner ysep=0.8pt] at (\colw,-0.45\tabh) {\icone{F418}\,#1};
+    \fi
+  \end{tikzpicture}\hss}\nointerlineskip}
+\renewcommand\debutcolonne[2]{\ifx\relax#2\relax\else\colorlet{rail}{#2}\fi\rail{#1}}
+
+% --- Mini-graphes de commits ---
+% \begin{graphe} ... \end{graphe} : tikzpicture centrée, unités x = 5 mm, y = 3,6 mm
+%   \node[c=couleur] (a) at (0,0) {A};      commit (rond, lettre dedans)
+%   \node[cm=couleur] ...                    commit de fusion (plein)
+%   \node[cg] ...                            commit fantôme (ancien, pointillé)
+%   \draw[b=couleur] (a) -- (b);             trait de branche ; (a) |- (b) pour bifurquer
+%   \node[ref=couleur, above=.6mm of b] {main};   étiquette de branche · head = HEAD · tag
+%   \node[lab] at (..) {texte};              légende en petit · hl = idem en chasse fixe
+%   \node[cmd] {git ...};                    commande · fl = flèche · zone = zone Git
+\tikzset{
+  b/.style={draw=#1, line width=1.2pt, rounded corners=1.4mm},
+  c/.style={circle, draw=#1, fill=white, line width=1.2pt, minimum size=3.5mm, inner sep=0pt,
+    text=ink, font=\ttfamily\bfseries\fontsize{5.2}{5.2}\selectfont},
+  cm/.style={c=#1, fill=#1, text=white},
+  cg/.style={c=gutter, dashed, line width=0.8pt, text=gutter},
+  ref/.style={fill=#1, text=white, rounded corners=1pt, inner xsep=1.2pt, inner ysep=0.9pt,
+    font=\ttfamily\bfseries\fontsize{5}{5}\selectfont},
+  head/.style={ref=ink},
+  tag/.style={ref=mk-yellow},
+  lab/.style={text=ink!75, font=\fontsize{5.6}{6.4}\selectfont, align=center, inner sep=0.5pt},
+  hl/.style={lab, font=\ttfamily\fontsize{5.2}{5.2}\selectfont},
+  cmd/.style={text=mk-pink, font=\ttfamily\bfseries\fontsize{5.4}{5.4}\selectfont, inner sep=0.8pt},
+  fl/.style={-{Stealth[length=1.8mm]}, line width=1pt, draw=ink!70},
+  zone/.style={draw=trait, fill=paper, line width=0.8pt, rounded corners=1mm, minimum height=6.5mm,
+    text width=13.2mm, align=center, inner sep=0.5pt, font=\bfseries\fontsize{6}{6.8}\selectfont},
+}
+\newenvironment{graphe}[1][]{\par\vspace{1.2mm}\centering\begin{tikzpicture}[x=5mm,y=3.6mm,#1]}%
+  {\end{tikzpicture}\par\vspace{1mm}}
+
+% marques des tableaux comparatifs
+\newcommand\oui{\leavevmode{\color{mk-green}\icone{F00C}}}
+\newcommand\non{\leavevmode{\color{gutter}--}}

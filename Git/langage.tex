@@ -1,0 +1,20 @@
+% --- Langage Git (ligne de commande) pour listings ---
+% Classes de mots-clés : [1] rose · [2] cyan · [3] vert · [4] couleur du thème
+% (styles dans ../librairie/fiche.sty). Chargé par git_cheat.tex.
+% [1] sous-commandes · [2] options · [3] références · [4] git
+\lstdefinelanguage{CODE}{
+  sensitive=true, alsoletter={-},
+  morekeywords=[1]{init,clone,config,add,commit,status,diff,log,show,restore,switch,
+    checkout,branch,merge,rebase,cherry-pick,reset,revert,stash,push,pull,fetch,remote,
+    tag,rm,mv,reflog,blame,worktree,clean,bisect,list,pop,apply,drop,prune,remove,
+    pick,reword,edit,squash,fixup,start,good,bad,filter-repo},
+  morekeywords=[2]{-m,-a,-am,-b,-c,-C,-B,-d,-D,-u,-v,-vv,-p,-i,-x,-n,-f,-r,-A,-sb,
+    -nd,-fd,--global,--oneline,--graph,--all,--staged,--cached,--soft,--mixed,--hard,
+    --amend,--no-edit,--no-ff,--ff-only,--squash,--continue,--abort,--skip,--onto,
+    --autosquash,--fixup,--force,--force-with-lease,--delete,--rebase,--list,
+    --show-origin,--author,--since,--follow,--source,--update-refs,--tags,--detach,
+    --ours,--theirs,--wait,--include-untracked,--stat},
+  morekeywords=[3]{HEAD,ORIG_HEAD,origin,main,feat,feat1,feat2,stash},
+  morekeywords=[4]{git},
+  morecomment=[l]{\#}, morestring=[b]", morestring=[b]',
+}
