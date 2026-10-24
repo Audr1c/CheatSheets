@@ -3,17 +3,17 @@
 % Complément de la fiche C (../C) : types, opérateurs, contrôle, pointeurs, mémoire,
 % préprocesseur et compilation n'y sont PAS répétés ; seul ce qu'ajoute le C++ figure ici.
 % Compiler : make (ici ou à la racine), ou xelatex cpp_cheat.tex — une seule passe suffit
-% Apparence : ../librairie (fiche.sty commun + thème). Macros de contenu :
-%   colonne (3 par page, séparées par \colbreak) · bloc{titre}{cat}
-%   catégories : syn typ ctl ex io lib (couleurs dans le thème)
-%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
-%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
-%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Apparence : ../librairie (fiche.sty + theme-cpp.tex). Macros de contenu :
+%   colonne[titre][couleur] (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : syn typ ctl ex io lib (couleurs et icônes dans le thème)
+%   code · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT} · schema
+%   optab · tab3 · compare · grille{n} (largeurs mesurées par la librairie)
 % Le code est en police à chasse fixe : les commentaires sont alignés à la main
 % (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
-% Après compilation : grep "\[fiche\]" cpp_cheat.log donne l'espace libre par colonne.
+% Après compilation : grep "\[fiche\]" cpp_cheat.log (place libre, collisions).
 \documentclass{article}
-\usepackage[c]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-c.tex
+\usepackage[cpp]{../librairie/fiche}   % apparence : ../librairie (fiche.sty + theme-cpp.tex)
 \input{langage}   % coloration syntaxique : \lstdefinelanguage{CODE}
 
 \begin{document}
@@ -23,7 +23,7 @@
 \entete{C++}{recto · ce que le C++ ajoute au C}
 \noindent
 % ======================= colonne 1 : du C au C++ =======================
-\begin{colonne}
+\begin{colonne}[du C au C++][col-a]
 \begin{bloc}{Du C au C++}{syn}
 \begin{code}
 #include <iostream>           // sans .h
@@ -54,15 +54,14 @@ void inc(int &x) { x++; }     // paramètre de sortie
 void show(const Big &b);      // entrée sans copie
 inc(i);                       // appel sans &
 \end{code}
-\renewcommand\arraystretch{1.1}\arrayrulecolor{black!14}
-\begin{tabular}{@{}>{\bfseries}p{14mm}@{\hspace{1.5mm}}p{27mm}@{\hspace{1.5mm}}p{\dimexpr\linewidth-44mm}@{}}
+\begin{compare}
            & \V|T *p| pointeur  & \V|T &r| référence \\ \hline
 Init.      & facultative        & \textbf{obligatoire} \\
 Nul        & \V|nullptr|        & impossible \\
 Réaff.     & \V|p = &autre;|    & non : \V|r = b| copie b \\
 Arithm.    & \V|p++|  \V|p + i| & non \\
 Accès      & \V|*p|  \V|p->m|   & \V|r|  \V|r.m|
-\end{tabular}
+\end{compare}
 \piege{\V|f(int)| et \V|f(int &)| ensemble : \V|f(i)| est ambigu.
 Ne jamais renvoyer une référence vers une variable locale.}
 \end{bloc}
@@ -84,19 +83,20 @@ auto *r = reinterpret_cast<Regs *>(0x40001000);
 \note{\V|dynamic_cast| : classe polymorphe (une méthode \V|virtual|) exigée.}
 \end{bloc}
 
-\begin{bloc}{vtable et coût}{typ}
+\begin{bloc}{enum class et namespace}{syn}
 \begin{code}
-struct A { uint32_t id, flags; void f(); };
-struct B { uint32_t id, flags; virtual void f(); };
-sizeof(A);                    // 8
-sizeof(B);                    // 16 : + vptr (8 octets)
+enum class Color : uint8_t { Red, Green, Blue };
+Color c = Color::Red;         // portée obligatoire
+int i = static_cast<int>(c);  // conversion explicite
+namespace phelma::proj1 { void print(); }  // C++17
+phelma::proj1::print();
+namespace pp = phelma::proj1; // alias
+using namespace std;          // jamais dans un .hpp
 \end{code}
-\note{Une \textbf{vtable} (adresses des méthodes virtuelles) par classe, un \textbf{vptr}
-par objet. Appel virtuel = une indirection.}
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 2 : classes =======================
-\begin{colonne}
+\begin{colonne}[classes][col-b]
 \begin{bloc}{Anatomie d'une classe}{ctl}
 \begin{code}
 // Circle.hpp : interface
@@ -126,6 +126,8 @@ pc->area();
 delete pc;                    // destr. + libération
 Circle::count();
 \end{code}
+\note{Accès vérifié à la compilation seulement. Un objet ne contient que ses attributs ;
+les méthodes reçoivent \V|this| en paramètre caché.}
 \end{bloc}
 
 \begin{bloc}{Construction et destruction}{ctl}
@@ -138,7 +140,7 @@ public:
     Duration &operator=(const Duration &o);
     ~Duration();
 private:
-    const long value;
+    long value;                   // pas const (operator=)
     std::string unit;
 };
 Duration::Duration(long s)
@@ -155,12 +157,12 @@ Liste init.  & obligatoire pour : membres \V|const|, références, membres sans 
 Ordre        & celui de \textbf{déclaration} des membres, pas celui de la liste \\
 Cycle        & base $\to$ membres $\to$ corps ; destruction en ordre inverse \\
 Implicites   & copie, \V|operator=|, destructeur ; \V|T()| seulement si aucun constructeur.
-               \V|= default| les demande, \V|= delete| les interdit
+               + déplacement (C++11). \V|= default| les demande, \V|= delete| les interdit
 \end{optab}
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 3 : héritage =======================
-\begin{colonne}
+\begin{colonne}[héritage][col-c]
 \begin{bloc}{Héritage et polymorphisme}{ctl}
 \begin{code}
 class Shape {                        // abstraite
@@ -193,7 +195,18 @@ for (Shape *s : v) s->draw();        // appel dynamique
 \V|override| & le compilateur vérifie la redéfinition · \V|final| l'interdit
 \end{optab}
 \piege{sans destructeur \V|virtual|, \V|delete| d'un \V|Shape *| oublie la partie \V|Rect|.
-\V|Shape s = rect;| tronque l'objet (\emph{slicing}).}
+passer une base \textbf{par valeur} (\V|void f(Base b)|) tronque l'objet dérivé (\emph{slicing}) : passer \V|const Base &|.}
+\end{bloc}
+
+\begin{bloc}{vtable et coût}{typ}
+\begin{code}
+struct A { uint32_t id, flags; void f(); };
+struct B { uint32_t id, flags; virtual void f(); };
+sizeof(A);                    // 8
+sizeof(B);                    // 16 : + vptr (8 octets)
+\end{code}
+\note{Une \textbf{vtable} (adresses des méthodes virtuelles) par classe, un \textbf{vptr}
+par objet. Appel virtuel = une indirection.}
 \end{bloc}
 
 \begin{bloc}{Accès et héritage}{ctl}
@@ -202,10 +215,8 @@ Accès  & \V|public|    & tout le monde \\
        & \V|protected| & la classe et ses dérivées \\
        & \V|private|   & la classe (et ses \V|friend|) \\
 Défaut & \V|struct|    & tout \V|public| \\
-       & \V|class|     & tout \V|private| (seule différence)
+       & \V|class|     & tout \V|private| ; héritage \V|private| par défaut
 \end{tab3}
-\note{Accès vérifié à la compilation seulement. Un objet ne contient que ses attributs ;
-les méthodes reçoivent \V|this| en paramètre caché.}
 
 \begin{optab}[17mm]
 Composition & « possède un » : attribut (\V|Movie| a une \V|Duration|) \\
@@ -235,7 +246,7 @@ Usage typique : hériter de plusieurs interfaces.}
 \entete{C++}{verso · ressources, généricité et bibliothèque}
 \noindent
 % ======================= colonne 1 : opérateurs, ressources =======================
-\begin{colonne}
+\begin{colonne}[opérateurs · RAII][col-a]
 \begin{bloc}{Surcharge d'opérateurs}{syn}
 \begin{code}
 class Complex {
@@ -305,7 +316,7 @@ public:
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 2 : généricité =======================
-\begin{colonne}
+\begin{colonne}[généricité · lambdas][col-b]
 \begin{bloc}{Templates}{typ}
 \begin{code}
 template <typename T>
@@ -361,22 +372,20 @@ std::function<bool(int)> fn = f;   // <functional>
 \V|[&]| : danger si elle survit au bloc.}
 \end{bloc}
 
-\begin{bloc}{enum class et namespace}{syn}
+\begin{bloc}{Algorithmes}{lib}
 \begin{code}
-enum class Color : uint8_t { Red, Green, Blue };
-Color c = Color::Red;         // portée obligatoire
-int i = static_cast<int>(c);  // conversion explicite
-namespace phelma::proj1 {     // C++17 (sinon imbriquer)
-    void print();
-}
-phelma::proj1::print();
-namespace pp = phelma::proj1; // alias
-using namespace std;          // jamais dans un .hpp
+std::sort(v.begin(), v.end());        // <algorithm>
+std::sort(v.begin(), v.end(),
+          [](int a, int b) { return a > b; });
+auto it = std::find(v.begin(), v.end(), 3);
+int n = std::count_if(v.begin(), v.end(), pred);
+v.erase(std::remove_if(v.begin(), v.end(), pred),
+        v.end());                     // supprime si pred
 \end{code}
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 3 : bibliothèque standard =======================
-\begin{colonne}
+\begin{colonne}[bibliothèque · move][col-c]
 \begin{bloc}{Flux et chaînes}{io}
 \begin{code}
 std::cout << "x = " << x << '\n';   // sans flush
@@ -389,12 +398,12 @@ while (std::getline(in, ligne)) { ... }
 std::cout << std::setw(8) << std::setprecision(3) << x;
 \end{code}
 \sub{std::string}
-\begin{tabular}{@{}p{22mm}@{}p{22mm}@{}p{\dimexpr\linewidth-44mm}@{}}
+\begin{grille}{3}
 \V|s.size()|  & \V|s.empty()|   & \V|s[i]  s.at(i)| \\
 \V|s + t|     & \V|s += t|      & \V|s == t  s < t| \\
 \V|s.find(t)| & \V|s.c_str()|   & \V|s.substr(pos, n)| \\
 \V|std::stoi(s)| & \V|std::stod(s)| & \V|std::to_string(x)|
-\end{tabular}
+\end{grille}
 \note{\V|find| : \V|std::string::npos| si absent · \V|c_str()| : \V|const char *|}
 \end{bloc}
 
@@ -420,16 +429,22 @@ for (auto it = v.begin(); it != v.end(); ++it) *it;
 \V|vector| deviennent invalides.}
 \end{bloc}
 
-\begin{bloc}{Algorithmes}{lib}
+\begin{bloc}{Déplacement (C++11)}{lib}
+\begin{schema}[x=1mm,y=1mm,font=\fontcode]
+  \node[draw=trait,fill=codebg,inner sep=1pt] (a) at (0,4) {a.data};
+  \node[draw=trait,fill=codebg,inner sep=1pt] (b) at (0,0) {b.data};
+  \node[draw=cat,line width=0.8pt,inner sep=1.2pt] (t) at (24,2) {tampon};
+  \draw[->,dashed,draw=gutter] (a) -- (t);
+  \draw[->,line width=0.8pt,draw=cat] (b) -- (t);
+  \node[anchor=west,text=note] at (33,2) {b = std::move(a)};
+\end{schema}
 \begin{code}
-std::sort(v.begin(), v.end());        // <algorithm>
-std::sort(v.begin(), v.end(),
-          [](int a, int b) { return a > b; });
-auto it = std::find(v.begin(), v.end(), 3);
-int n = std::count_if(v.begin(), v.end(), pred);
-v.erase(std::remove_if(v.begin(), v.end(), pred),
-        v.end());                     // supprime si pred
+Buf(Buf &&o) noexcept       // déplacement : vole
+    : data(o.data), n(o.n) { o.data = nullptr; }
+Buf b = std::move(a);       // a reste valide, vide
 \end{code}
+\note{\V|std::move| convertit seulement en \V|T&&|. \textbf{Règle des 5} : dtor, 2 copies,
+2 déplacements ; \textbf{des 0} : n'en écrire aucun (\V|vector|, \V|unique_ptr|).}
 \end{bloc}
 
 \begin{bloc}{Exceptions}{ctl}
