@@ -1,0 +1,20 @@
+% --- Langage VHDL pour listings (insensible à la casse) ---
+% Classes de mots-clés : [1] rose · [2] cyan · [3] vert · [4] couleur du thème
+% (styles dans ../librairie/fiche.sty). Chargé par vhdl_cheat.tex.
+% [1] mots-clés · [2] types · [3] fonctions et paquets
+% Pas de chaînes '...' : l'apostrophe sert aussi aux attributs (x'length).
+\lstdefinelanguage{CODE}{
+  sensitive=false,
+  morekeywords=[1]{library,use,all,entity,is,port,generic,map,end,architecture,of,
+    begin,signal,variable,constant,component,process,if,then,elsif,else,case,when,
+    others,for,loop,while,generate,in,out,inout,buffer,downto,to,wait,until,on,
+    report,severity,assert,after,function,procedure,return,type,subtype,array,record,
+    range,package,body,select,with,null,exit,next,and,or,not,nand,nor,xor,xnor,
+    sll,srl,sla,sra,rol,ror,mod,rem,abs,open,alias,attribute,work,impure,pure},
+  morekeywords=[2]{std_logic,std_logic_vector,std_ulogic,std_ulogic_vector,unsigned,
+    signed,integer,natural,positive,boolean,bit,bit_vector,real,time,string,character},
+  morekeywords=[3]{ieee,std_logic_1164,numeric_std,rising_edge,falling_edge,
+    to_unsigned,to_signed,to_integer,resize,shift_left,shift_right,rotate_left,
+    rotate_right,now,note,warning,error,failure,std,env,stop,finish,to_hstring,image},
+  morecomment=[l]{--}, morestring=[b]",
+}

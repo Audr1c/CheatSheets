@@ -1,0 +1,25 @@
+% Thème VHDL : barre « fenêtre » claire (sœur de Verilog), catégories génériques,
+% schémas de conversion de types.
+% Utilisé par VHDL/vhdl_cheat.tex.
+
+% catégories (liseré de l'onglet, sous-titres)
+\colorlet{cat-syn}{mk-pink}      % syntaxe, opérateurs
+\colorlet{cat-typ}{mk-cyan}      % types, données
+\colorlet{cat-ctl}{mk-purple}    % contrôle, fonctions
+\colorlet{cat-ex}{mk-orange}     % exemples, motifs typiques
+\colorlet{cat-io}{mk-green}      % E/S, outils, tests
+\colorlet{cat-lib}{mk-yellow}    % bibliothèque, paquets
+\colorlet{cat}{cat-syn}
+
+% barre d'en-tête
+\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{intégré} \
+  \legit{mk-grey}{-{}- commentaire} \ \legit{mk-purple}{«à remplir»}}
+\let\entete\entetefenetre
+
+% schéma des conversions : ty = boîte de type · cv = flèche · fn = nom de fonction
+\tikzset{
+  ty/.style={draw=trait, fill=paper, line width=0.8pt, rounded corners=1mm, inner sep=0pt,
+    minimum height=5.2mm, font=\ttfamily\bfseries\fontsize{6.6}{6.6}\selectfont, text=mk-cyan},
+  cv/.style={-{Stealth[length=1.6mm]}, line width=0.8pt, draw=ink!75},
+  fn/.style={font=\ttfamily\fontsize{5.4}{5.4}\selectfont, text=mk-green, inner sep=0.8pt},
+}
