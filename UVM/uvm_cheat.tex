@@ -4,13 +4,14 @@
 % Complète la fiche Verilog (../Verilog) : le langage, la conception, les interfaces,
 %   les threads et les tableaux dynamiques sont là-bas ; ici seulement la vérification.
 % Compiler : make (ici ou à la racine), ou xelatex uvm_cheat.tex — une seule passe suffit
-% Apparence : ../librairie (fiche.sty + theme-uvm.tex = thème Verilog + catégories oop rnd cov sva uvm).
-% Macros : bloc{titre}{cat} · code · \V|...| · «...» = à remplir · \sub · \note · \piege
-%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Apparence : ../librairie (fiche.sty + theme-uvm.tex = thème Verilog + catégories
+%   oop rnd cov sva uvm obs). Macros : colonne[titre][couleur] · bloc{titre}{cat} · code
+%   · \V|...| · «...» = à remplir · \sub · \note · \piege · schema
+%   optab étiquette | texte · tab3 étiquette | code | remarque (largeurs mesurées)
 % Le code est en chasse fixe : commentaires alignés à la main (les « » ne comptent pas).
-% Après compilation : grep "\[fiche\]" uvm_cheat.log donne l'espace libre par colonne.
+% Après compilation : grep "\[fiche\]" uvm_cheat.log (place libre, collisions).
 \documentclass{article}
-\usepackage[uvm]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-uvm.tex
+\usepackage[uvm]{../librairie/fiche}   % apparence : ../librairie (fiche.sty + theme-uvm.tex)
 \input{langage}   % coloration syntaxique : \lstdefinelanguage{CODE}
 
 \begin{document}
@@ -20,7 +21,7 @@
 \entete{SystemVerilog · vérification}{recto · classes, aléatoire, couverture, assertions}
 \noindent
 % ======================= colonne 1 : classes =======================
-\begin{colonne}
+\begin{colonne}[classes][col-a]
 \begin{bloc}{Classes et objets}{oop}
 \begin{code}
 class Packet;
@@ -88,12 +89,13 @@ Code 100\,\%   & Fonct.~<~100\,\% & tests incomplets \\
 Code < 100\,\% & Fonct.~100\,\%   & plan de vérif incomplet \\
 Code 100\,\%   & Fonct.~100\,\%   & bien, mais rien d'oublié ?
 \end{tab3}
-\note{Exécuté $\neq$ vérifié : il faut aussi des checkers (assertions, scoreboard).}
+\note{Exécuté $\neq$ vérifié : il faut aussi des checkers (assertions, scoreboard).
+\V|covergroup| : colonne 3.}
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 2 : aléatoire =======================
-\begin{colonne}
-\begin{bloc}{Variables aléatoires et contraintes}{rnd}
+\begin{colonne}[aléatoire][col-b]
+\begin{bloc}{rand et contraintes}{rnd}
 \begin{code}
 typedef enum {LOW, MID, HIGH} kind_t;
 class Trans;
@@ -157,8 +159,8 @@ t.randomize(addr);             // ne tire que addr
 \sub{randcase : actions pondérées}
 \begin{code}
 randcase
-  3          : x = 1;          // 3/8
-  1          : x = 2;          // 1/8
+  3          : x = 1;          // 3/8 si en = 1, 3/4 sinon
+  1          : x = 2;          // 1/8 si en = 1, 1/4 sinon
   4*en       : x = 3;          // poids = expression
 endcase
 \end{code}
@@ -166,7 +168,7 @@ endcase
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 3 : couverture, assertions =======================
-\begin{colonne}
+\begin{colonne}[couverture · SVA][col-c]
 \begin{bloc}{Couverture fonctionnelle}{cov}
 \begin{code}
 covergroup cg_tr @(posedge clk);  // ou sample()
@@ -245,16 +247,15 @@ bind fifo fifo_chk chk_i (.*);    // greffe dans le DUT
 \newpage
 \entete{UVM}{verso · architecture, séquences, composants}
 \noindent
-% ======================= colonne 1 : architecture =======================
-\begin{colonne}
+% ======================= colonne 4 : architecture =======================
+\begin{colonne}[architecture][col-a]
 \begin{bloc}{Architecture d'un banc UVM}{uvm}
-\begin{center}
-\begin{tikzpicture}[x=1mm, y=1mm, line width=0.6pt, >={Stealth[length=1.5mm]},
-    cmp/.style={draw=trait, fill=white, minimum width=12.5mm, minimum height=4.4mm,
-                inner sep=0.6mm, font=\ttfamily\bfseries\fontsize{5.4}{6}\selectfont},
-    lbl/.style={font=\ttfamily\fontsize{5}{5.4}\selectfont, inner sep=0.8pt},
+\begin{schema}[x=1mm, y=1mm, line width=0.6pt, >={Stealth[length=1.5mm]},
+    cmp/.style={draw=trait, fill=white, minimum width=13mm, minimum height=4.6mm,
+                inner sep=0.5mm, font=\ttfamily\bfseries\fontsize{5.8}{6.2}\selectfont},
+    lbl/.style={font=\ttfamily\fontsize{5.6}{5.8}\selectfont, inner sep=0.8pt},
     titre/.style={anchor=north east, inner sep=0.8pt,
-                  font=\ttfamily\bfseries\fontsize{5.4}{6}\selectfont},
+                  font=\ttfamily\bfseries\fontsize{5.8}{6.2}\selectfont},
     zone/.style={rounded corners=1mm, line width=0.5pt}]
   \draw[zone, draw=trait, fill=paper] (0,9.5) rectangle (80,34);
   \node[titre] at (79.6,34) {test = uvm\_test\_top};
@@ -274,9 +275,8 @@ bind fifo fifo_chk chk_i (.*);    // greffe dans le DUT
   \draw[->] (drv) -- node[lbl, left, pos=0.62] {vif} (drv |- if.north);
   \draw[->] (mon |- if.north) -- node[lbl, right, pos=0.38] {vif} (mon);
   \draw[->] (mon) -- node[lbl, above] {ap} (scb);
-  \foreach \x in {30,47} \draw (\x,3.3) -- (\x,2.2);
-\end{tikzpicture}
-\end{center}
+  \foreach \x in {30,47} \draw (\x,3.2) -- (\x,2.3);
+\end{schema}
 \begin{optab}[19mm]
 \V|uvm_object|    & items, séquences, config : créés pendant le test, sans parent \\
 \V|uvm_component| & structure fixe : \V|new(name, parent)|, phases, hiérarchie
@@ -298,12 +298,16 @@ $\parallel$ tous les composants en parallèle.}
 \begin{code}
 class my_test extends uvm_test;
   `uvm_component_utils(my_test)     // factory
+  my_env env;                       // créé en build_phase
   function new(string name, uvm_component parent);
     super.new(name, parent);        // obligatoire
   endfunction
   task run_phase(uvm_phase phase);
+    wr_rd_seq seq;
     phase.raise_objection(this);    // empêche la fin
-    «stimuli : seq.start(...)»
+    seq = wr_rd_seq::type_id::create("seq");
+    void'(seq.randomize());
+    seq.start(env.agt.sqr);         // lance la séquence
     phase.drop_objection(this);     // plus aucune
   endtask                           //  -> fin du test
 endclass
@@ -330,8 +334,8 @@ if (!uvm_config_db#(int)::get(this, "", "n", n))
 \end{optab}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 2 : stimulus =======================
-\begin{colonne}
+% ======================= colonne 5 : stimulus =======================
+\begin{colonne}[stimulus][col-b]
 \begin{bloc}{Transaction : sequence item}{rnd}
 \begin{code}
 class apb_tr extends uvm_sequence_item;
@@ -366,17 +370,8 @@ class wr_rd_seq extends uvm_sequence #(apb_tr);
 endclass
 \end{code}
 \note{\V|`uvm_do(x)| : crée, randomise, envoie l'item ou lance la sous-séquence x
-(\V|start_item| + \V|randomize| + \V|finish_item|). \V|new| : comme l'item.}
-\sub{Lancer une séquence (test)}
-\begin{code}
-seq = wr_rd_seq::type_id::create("seq");
-void'(seq.randomize());
-seq.start(env.agt.sqr);            // dans run_phase
-// ou séquence par défaut d'une phase :
-uvm_config_db#(uvm_object_wrapper)::set(this,
-  "env.agt.sqr.run_phase", "default_sequence",
-  wr_rd_seq::type_id::get());
-\end{code}
+(\V|start_item| + \V|randomize| + \V|finish_item|). \V|new| : comme l'item.
+Lancée par le test : \V|seq.start(sqr)| (colonne 4).}
 \end{bloc}
 
 \begin{bloc}{Driver}{rnd}
@@ -384,7 +379,12 @@ uvm_config_db#(uvm_object_wrapper)::set(this,
 class apb_drv extends uvm_driver #(apb_tr);
   `uvm_component_utils(apb_drv)
   virtual apb_if vif;              // accès aux signaux
-  «new + build_phase : get de vif (config_db)»
+  function void build_phase(uvm_phase phase);   // + new
+    super.build_phase(phase);
+    if (!uvm_config_db#(virtual apb_if)::get(
+          this, "", "vif", vif))   // set par tb_top
+      `uvm_fatal("NOVIF", "pas de vif")
+  endfunction
   task run_phase(uvm_phase phase);
     forever begin
       seq_item_port.get_next_item(req);  // bloquant
@@ -402,9 +402,9 @@ endclass
 \end{code}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 3 : observation, assemblage =======================
-\begin{colonne}
-\begin{bloc}{Monitor}{sva}
+% ======================= colonne 6 : observation, assemblage =======================
+\begin{colonne}[observation · assemblage][col-c]
+\begin{bloc}{Monitor}{obs}
 \begin{code}
 class apb_mon extends uvm_monitor;
   `uvm_component_utils(apb_mon)
@@ -423,7 +423,7 @@ endclass
 \end{code}
 \end{bloc}
 
-\begin{bloc}{Scoreboard}{sva}
+\begin{bloc}{Scoreboard}{obs}
 \begin{code}
 `uvm_analysis_imp_decl(_apb)   // crée les classes
 `uvm_analysis_imp_decl(_uart)  // uvm_analysis_imp_apb...
@@ -434,7 +434,7 @@ class my_scbd extends uvm_scoreboard;
   byte exp_q[$];                     // attendus (file)
   «new : super.new() puis apb_imp = new("apb_imp", this)»
   function void write_apb(apb_tr t);   // entrée
-    if (t.dir == WRITE) exp_q.push_back(t.data);
+    if (t.dir == WRITE) exp_q.push_back(t.data[7:0]);
   endfunction
   function void write_uart(uart_fr f); // sortie
     byte e = exp_q.pop_front();
