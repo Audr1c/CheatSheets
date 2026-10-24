@@ -4,17 +4,18 @@
 % Forme une paire avec python_avance.tex (décorateurs, générateurs, typing, asyncio...) :
 %   ici seulement l'essentiel de ces sujets (itertools, logging, breakpoint), le détail est là-bas.
 % Compiler : make (ici ou à la racine), ou xelatex python_cheat.tex — une seule passe suffit
-% Apparence : ../librairie (fiche.sty + theme-python.tex : barre bleue, liseré jaune). Macros de contenu :
-%   colonne (3 par page, séparées par \colbreak) · bloc{titre}{cat}
-%   catégories : syn typ ctl ex io lib (couleurs dans le thème)
-%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
+% Apparence : ../librairie (fiche.sty + theme-python.tex). Macros de contenu :
+%   colonne[titre][couleur] (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : syn typ ctl ex io lib (couleurs et icônes dans le thème)
+%   code · \V|...| code en ligne · «...» dans le code = à remplir
 %   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
-%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+%   optab étiquette | texte · tab3 étiquette | code | remarque
+%   (largeurs mesurées par la librairie : celles écrites entre [] et {} sont ignorées)
 % Le code est en police à chasse fixe : les commentaires sont alignés à la main
 % (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
-% Après compilation : grep "\[fiche\]" python_cheat.log donne l'espace libre par colonne.
+% Après compilation : grep "\[fiche\]" python_cheat.log (place libre, collisions).
 \documentclass{article}
-\usepackage[python]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-python.tex
+\usepackage[python]{../librairie/fiche}   % apparence : ../librairie (fiche.sty + theme-python.tex)
 \input{langage_cheat}   % coloration syntaxique : \lstdefinelanguage{CODE}
 
 \begin{document}
@@ -24,11 +25,11 @@
 \entete{Python 3}{recto · le langage}
 \noindent
 % ======================= colonne 1 : bases =======================
-\begin{colonne}
+\begin{colonne}[bases][col-a]
 \begin{bloc}{Opérateurs}{syn}
 \begin{tab3}[13mm]{26mm}
 Arithm.   & \V|+ - * / // % **| & \V|/| réel, \V|//| entier, \V|**| puissance \\
-Compar.   & \V|== != < <= >|      & chaînables : \V|0 <= i < n| \\
+Compar.   & \V|== != < <= > >=|   & chaînables : \V|0 <= i < n| \\
 Logiques  & \V|and or not|        & court-circuit, rendent un opérande \\
 Identité  & \V|is|, \V|is not|    & même objet (pour \V|None|) \\
 Appart.   & \V|in|, \V|not in|    & liste, chaîne, clé de dict \\
@@ -38,7 +39,7 @@ Morse     & \V|(n := len(x))|     & affecte dans une expression \badge{3.8}
 \end{tab3}
 \end{bloc}
 
-\begin{bloc}{Types de base}{typ}
+\begin{bloc}{Types et nombres}{typ}
 \begin{code}
 n = 42           # int, sans limite de taille
 x = 3.14         # float : double IEEE 754
@@ -50,9 +51,7 @@ r = None         # absence de valeur
 type(x), isinstance(x, (int, float))
 \end{code}
 \note{Immuables : \V|int float str tuple bytes frozenset|. Mutables : \V|list dict set| et la plupart des objets.}
-\end{bloc}
-
-\begin{bloc}{Nombres}{typ}
+\sub{Nombres}
 \begin{code}
 int("ff", 16), int("0b101", 0)  # 255, 5
 hex(255), bin(5), oct(8)        # '0xff', '0b101', '0o10'
@@ -65,6 +64,15 @@ import math                     # pi, sqrt, log2, ceil...
 \end{bloc}
 
 \begin{bloc}{Chaînes et f-strings}{typ}
+\begin{schema}[x=4.2mm, y=4.2mm, font=\fontcode]
+  \foreach \c [count=\i from 0] in {P,y,t,h,o,n}
+    \node[draw=trait, line width=0.5pt, fill=cat!\ifnum\i>0 \ifnum\i<4 35\else 8\fi\else 8\fi,
+          minimum size=4.2mm, inner sep=0pt] at (\i+0.5,0) {\c};
+  \foreach \i in {0,...,6} \node[text=cat!80!black, inner sep=0.5pt] at (\i,0.95) {\i};
+  \foreach \i in {0,...,5} \node[text=mk-grey, inner sep=0.5pt] at (\i,-0.95) {\the\numexpr\i-6\relax};
+  \node[anchor=west, text=note, font=\fontbloc, align=left] at (6.6,0)
+    {\V|s[1:4]| $\to$ \V|'yth'| (fin exclue)\\ \V|s[-2:]| $\to$ \V|'on'|};
+\end{schema}
 \begin{code}
 s[0], s[-1], s[1:4], s[::-1]      # [::-1] : inverse
 "a,b,c".split(",")                # ['a', 'b', 'c']
@@ -82,13 +90,84 @@ r"C:\new"                         # brute : \ non échappé
 \begin{bloc}{Console}{io}
 \begin{code}
 print(a, b, sep=", ", end="")  # sans retour ligne
+print(f"{nom:<8}{v:6.2f}")     # colonnes alignées
 nom = input("nom ? ")          # toujours une str
 n = int(input("n ? "))
+import sys; sys.argv, sys.exit(1)  # arguments, code
 \end{code}
+\note{Fichiers et arguments nommés : verso (colonne 4).}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 2 : collections =======================
-\begin{colonne}
+% ======================= colonne 2 : contrôle, fonctions, modules =======================
+\begin{colonne}[contrôle · fonctions][col-b]
+\begin{bloc}{Contrôle et boucles}{ctl}
+\begin{code}
+if x > 0:
+    ...
+elif x == 0:
+    ...
+else:
+    ...
+while «cond»:
+    if «fini»: break  # sort de la boucle
+    continue        # tour suivant
+for i in range(«début», «fin», «pas»): ...
+for i, x in enumerate(l, start=1): ...
+for a, b in zip(l1, l2): ...  # s'arrête au plus court
+for x in reversed(l): ...
+any(x > 0 for x in l), all(l)
+min(l, key=len), max(d, key=d.get)
+match cmd.split():  # filtrage de motifs (3.10)
+    case ["go", dest]: aller(dest)
+    case ["stop"] | ["q"]: quitter()
+    case _: print("inconnu")
+\end{code}
+\note{Les blocs sont définis par l'indentation (4 espaces). \V|pass| = bloc vide.}
+\end{bloc}
+
+\begin{bloc}{Fonctions}{ctl}
+\begin{code}
+def f(a, b=2, *args, k=0, **kw) -> int:
+    """Docstring : ce que fait f."""
+    return a + b               # None si pas de return
+f(1); f(1, 3, 4, 5, k=1, x=9)  # args=(4, 5), kw={'x': 9}
+f(*liste, **dico)              # dépaqueter à l'appel
+carre = lambda x: x * x        # fonction anonyme
+def g(x: float, y: list[int] | None = None): ...
+\end{code}
+\note{Paramètres après \V|*args| (ou \V|*|) : seulement par mot-clé. Les annotations ne sont pas vérifiées à l'exécution.
+Affecter une variable dans une fonction la rend locale : \V|global| / \V|nonlocal| pour modifier celle du dessus.}
+\piege{\V|def f(l=[])| garde la même liste d'un appel à l'autre : défaut \V|None|, puis \V|l = l or []|.}
+\end{bloc}
+
+\begin{bloc}{Exceptions}{ctl}
+\begin{code}
+try:
+    v = int(txt)
+except (ValueError, TypeError) as e:
+    print("invalide :", e)
+else:
+    ...  # si aucune exception
+finally:
+    ...  # toujours exécuté
+raise ValueError(f"mauvais n : {n}")
+class SimError(Exception): pass
+\end{code}
+\note{\V|with| ferme le fichier même en cas d'exception.}
+\end{bloc}
+
+\begin{bloc}{Modules et imports}{lib}
+\begin{code}
+import numpy as np        # alias
+from pathlib import Path  # un nom
+from . import utils       # relatif (paquet)
+if __name__ == "__main__": main()
+\end{code}
+\note{Fichier = module ; dossier avec \V|__init__.py| = paquet.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : collections, classes =======================
+\begin{colonne}[collections · classes][col-c]
 \begin{bloc}{Listes et tuples}{lib}
 \begin{code}
 l = [3, 1, 2]
@@ -103,6 +182,7 @@ t = (1, "a")                   # tuple : immuable
 a, *reste = [1, 2, 3]          # a=1, reste=[2, 3]
 a, b = b, a                    # échange
 \end{code}
+\piege{\V|b = a| ne copie pas : \V|a.copy()|, ou \V|copy.deepcopy(a)| si imbriqué.}
 \end{bloc}
 
 \begin{bloc}{Dictionnaires et ensembles}{lib}
@@ -135,68 +215,6 @@ sum(x**2 for x in data)             # générateur
 \end{code}
 \end{bloc}
 
-\begin{bloc}{Contrôle}{ctl}
-\begin{code}
-if x > 0:
-    ...
-elif x == 0:
-    ...
-else:
-    ...
-while «cond»:
-    if «fini»: break  # sort de la boucle
-    continue        # tour suivant
-match cmd.split():  # filtrage de motifs (3.10)
-    case ["go", dest]: aller(dest)
-    case ["stop"] | ["q"]: quitter()
-    case _: print("inconnu")
-\end{code}
-\note{Les blocs sont définis par l'indentation (4 espaces). \V|pass| = bloc vide.}
-\end{bloc}
-\end{colonne}\colbreak
-% ======================= colonne 3 : itérer, fonctions, classes =======================
-\begin{colonne}
-\begin{bloc}{Itérer}{ctl}
-\begin{code}
-for i in range(«début», «fin», «pas»): ...
-for i, x in enumerate(l, start=1): ...
-for a, b in zip(l1, l2): ...  # s'arrête au plus court
-for x in reversed(l): ...
-any(x > 0 for x in l), all(l)
-min(l, key=len), max(d, key=d.get)
-\end{code}
-\end{bloc}
-
-\begin{bloc}{Fonctions}{ctl}
-\begin{code}
-def f(a, b=2, *args, k=0, **kw) -> int:
-    """Docstring : ce que fait f."""
-    return a + b               # None si pas de return
-f(1); f(1, 3, 4, 5, k=1, x=9)  # args=(4, 5), kw={'x': 9}
-f(*liste, **dico)              # dépaqueter à l'appel
-carre = lambda x: x * x        # fonction anonyme
-def g(x: float, y: list[int] | None = None): ...
-\end{code}
-\note{Paramètres après \V|*args| (ou \V|*|) : seulement par mot-clé. Les annotations ne sont pas vérifiées à l'exécution.
-Affecter une variable dans une fonction la rend locale : \V|global| / \V|nonlocal| pour modifier celle du dessus.}
-\end{bloc}
-
-\begin{bloc}{Exceptions}{ctl}
-\begin{code}
-try:
-    v = int(txt)
-except (ValueError, TypeError) as e:
-    print("invalide :", e)
-else:
-    ...  # si aucune exception
-finally:
-    ...  # toujours exécuté
-raise ValueError(f"mauvais n : {n}")
-class SimError(Exception): pass
-\end{code}
-\note{\V|with| ferme le fichier même en cas d'exception.}
-\end{bloc}
-
 \begin{bloc}{Classes}{ctl}
 \begin{code}
 class Reg:
@@ -213,16 +231,6 @@ class Compteur(Reg):  # héritage
         super().__init__(nom, 16)
 \end{code}
 \end{bloc}
-
-\begin{bloc}{Modules et imports}{lib}
-\begin{code}
-import numpy as np        # alias
-from pathlib import Path  # un nom
-from . import utils       # relatif (paquet)
-if __name__ == "__main__": main()
-\end{code}
-\note{Fichier = module ; dossier avec \V|__init__.py| = paquet.}
-\end{bloc}
 \end{colonne}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,19 +239,19 @@ if __name__ == "__main__": main()
 \newpage
 \entete{Python 3}{verso · scripts d'ingénieur}
 \noindent
-% ======================= colonne 1 : fichiers =======================
-\begin{colonne}
+% ======================= colonne 4 : entrées, sorties, fichiers =======================
+\begin{colonne}[fichiers · scripts][col-a]
 \begin{bloc}{Fichiers texte}{io}
 \begin{code}
 with open("in.txt", encoding="utf-8") as fh:
-    for ligne in fh:              # ligne par ligne
+    for ligne in fh:           # ligne par ligne
         ligne = ligne.rstrip("\n")
-data = Path(«f»).read_bytes()       # binaire
-txt = open(«f»).read()              # tout d'un coup
-lignes = open(«f»).read().splitlines()
 with open("out.txt", "w") as fh:  # "a" = ajouter
     fh.write(f"{n}\n")
     print("ok", file=fh)
+txt = Path(«f»).read_text()      # tout, fermé aussitôt
+lignes = txt.splitlines()
+data = Path(«f»).read_bytes()    # binaire
 \end{code}
 \note{Modes : \V|"r"| lecture, \V|"w"| écrase, \V|"a"| ajoute, \V|"b"| binaire (bytes).}
 \end{bloc}
@@ -273,15 +281,14 @@ with open("out.csv", "w", newline="") as fh:
     w = csv.writer(fh)
     w.writerow(["design", "area"])
     w.writerows(lignes)
-cfg = json.load(open("cfg.json"))   # -> dict / list
-json.dump(cfg, open("o.json", "w"), indent=2)
-s = json.dumps(cfg); cfg = json.loads(s)  # en str
+cfg = json.loads(Path("cfg.json").read_text())  # dict
+Path("o.json").write_text(json.dumps(cfg, indent=2))
 import pandas as pd
 df = pd.read_csv("res.csv"); df["area"].mean()
 \end{code}
 \end{bloc}
 
-\begin{bloc}{Squelette de script}{ex}
+\begin{bloc}{Script : argparse, main}{ex}
 \begin{code}
 #!/usr/bin/env python3
 """Rassemble les rapports de synthèse."""
@@ -300,8 +307,8 @@ if __name__ == "__main__":      # pas à l'import
 \note{\V|python3 script.py runs -o a.csv -v| ; \V|-h| est généré.}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 2 : outils =======================
-\begin{colonne}
+% ======================= colonne 5 : outils =======================
+\begin{colonne}[outils][col-b]
 \begin{bloc}{Lancer des outils (subprocess)}{lib}
 \begin{code}
 import subprocess, os, shutil
@@ -370,8 +377,8 @@ logging    & \V|basicConfig info| & plutôt que \V|print|
 \end{tab3}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 3 : numpy, matplotlib, pièges =======================
-\begin{colonne}
+% ======================= colonne 6 : numpy, matplotlib, pièges =======================
+\begin{colonne}[numpy · tracés · pièges][col-c]
 \begin{bloc}{numpy}{lib}
 \begin{code}
 import numpy as np
@@ -428,12 +435,12 @@ breakpoint()               # débogueur pdb
 
 \begin{bloc}{Pièges}{ex}
 \begin{optab}[19mm]
-Défaut mutable & \V|def f(l=[])| garde la même liste entre les appels : défaut \V|None|. \\
-Alias & \V|b = a| ne copie pas. Copier : \V|a.copy()|, ou \V|copy.deepcopy(a)| si imbriqué. \\
 Liste de listes & \V|[[0]*3]*3| répète la même ligne : passer par une compréhension. \\
 Flottants & \V|0.1 + 0.2 != 0.3| : comparer avec \V|math.isclose|. \\
-\V|is| ou \V|==| & \V|is| teste l'identité : seulement pour \V|None|.
+\V|is| ou \V|==| & \V|is| teste l'identité : seulement pour \V|None|. \\
+Itérer et modifier & retirer d'une liste pendant un \V|for| saute des éléments : itérer sur une copie.
 \end{optab}
+\note{Défaut mutable : bloc Fonctions · alias : bloc Listes (recto).}
 \end{bloc}
 \end{colonne}
 \end{document}

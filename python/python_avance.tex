@@ -3,17 +3,17 @@
 %   ici itérateurs, générateurs, décorateurs, objets, context managers, typage,
 %   concurrence (threads, processus, asyncio), tests, débogage et pièges avancés.
 % Compiler : make (ici ou à la racine), ou xelatex python_avance.tex — une seule passe suffit
-% Apparence : ../librairie (fiche.sty + theme-python.tex, partagé avec python_cheat.tex). Macros de contenu :
-%   colonne (3 par page, séparées par \colbreak) · bloc{titre}{cat}
-%   catégories : syn typ ctl ex io lib (couleurs dans le thème)
-%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
-%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
-%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Apparence : ../librairie (fiche.sty + theme-python.tex, partagé avec python_cheat.tex).
+%   colonne[titre][couleur] (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : syn typ ctl ex io lib (couleurs et icônes dans le thème)
+%   code · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT} · schema
+%   optab étiquette | texte · tab3 étiquette | code | remarque (largeurs mesurées)
 % Le code est en police à chasse fixe : les commentaires sont alignés à la main
 % (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
-% Après compilation : grep "\[fiche\]" python_avance.log donne l'espace libre par colonne.
+% Après compilation : grep "\[fiche\]" python_avance.log (place libre, collisions).
 \documentclass{article}
-\usepackage[python]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-python.tex
+\usepackage[python]{../librairie/fiche}   % apparence : ../librairie (fiche.sty + theme-python.tex)
 \input{langage_avance}   % coloration syntaxique : \lstdefinelanguage{CODE}
 
 \begin{document}
@@ -22,8 +22,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \entete{Python avancé}{recto · itérateurs, fonctions, objets}
 \noindent
-% ======================= colonne 1 : itérer, filtrer =======================
-\begin{colonne}
+% ======================= colonne 1 : match, itérer =======================
+\begin{colonne}[match · itérer][col-a]
+\begin{bloc}{match : motifs avancés}{ctl}
+\begin{code}
+match msg:
+    case {"op": "write", "adr": int(a), "data": d}:
+        ecrire(a, d)                  # motif de dict
+    case Point(x=0, y=y):             # motif de classe
+        ...
+    case [tete, *reste] if tete > 0:  # garde
+        ...
+    case int() | float() as v:        # alternative + nom
+        ...
+    case _:
+        raise ValueError(msg)
+\end{code}
+\end{bloc}
+
 \begin{bloc}{Itérateurs}{ctl}
 \begin{code}
 it = iter([1, 2, 3])  # appelle __iter__
@@ -73,25 +89,9 @@ carres = (x * x for x in range(10**9))  # paresseux
 \V|zip_longest(a, b)|  & zip jusqu'au plus long
 \end{optab}
 \end{bloc}
-
-\begin{bloc}{match : motifs avancés}{ctl}
-\begin{code}
-match msg:
-    case {"op": "write", "adr": int(a), "data": d}:
-        ecrire(a, d)                  # motif de dict
-    case Point(x=0, y=y):             # motif de classe
-        ...
-    case [tete, *reste] if tete > 0:  # garde
-        ...
-    case int() | float() as v:        # alternative + nom
-        ...
-    case _:
-        raise ValueError(msg)
-\end{code}
-\end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 2 : fonctions =======================
-\begin{colonne}
+\begin{colonne}[fonctions][col-b]
 \begin{bloc}{Fermetures (closures)}{syn}
 \begin{code}
 def compteur(debut=0):
@@ -159,7 +159,7 @@ hex8 = partial("{:08x}".format)  # hex8(42) : 0000002a
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 3 : objets =======================
-\begin{colonne}
+\begin{colonne}[objets][col-c]
 \begin{bloc}{Méthodes spéciales}{typ}
 \begin{optab}[27mm]
 \V|__repr__ __str__|   & \V|repr(o)| pour déboguer, \V|str(o)| et \V|print| \\
@@ -170,7 +170,7 @@ hex8 = partial("{:08x}".format)  # hex8(42) : 0000002a
 \V|__iter__|           & \V|for x in o| ; \V|__contains__| : \V|x in o| \\
 \V|__call__|           & \V|o(x)| : objet appelable \\
 \V|__add__ __radd__|   & \V|o + x|, \V|x + o| ; \V|__iadd__| : \V|+=| \\
-\V|__enter__ __exit__| & \V|with o:| \\
+\V|__enter__ __exit__| & \V|with o:| (Context managers, au verso) \\
 \V|__getattr__|        & attribut introuvable
 \end{optab}
 \end{bloc}
@@ -233,8 +233,8 @@ Perm.R | Perm.W               # combinable
 \newpage
 \entete{Python avancé}{verso · typage, concurrence, qualité}
 \noindent
-% ======================= colonne 1 : with, typage, paquet =======================
-\begin{colonne}
+% ======================= colonne 4 : with, typage, paquet =======================
+\begin{colonne}[with · typage · paquet][col-a]
 \begin{bloc}{Context managers}{ctl}
 \begin{code}
 class Chrono:
@@ -272,8 +272,8 @@ def premier[T](xs: list[T]) -> T:       # générique
 type Vecteur = list[float]              # alias 3.12
 class Lisible(Protocol):                # duck typing
     def read(self, n: int = -1) -> bytes: ...
-def charger(src: Lisible): ...          # tout objet
-def gen() -> Iterator[int]: yield 1     # avec read
+def charger(src: Lisible): ...          # a un .read()
+def gen() -> Iterator[int]: yield 1     # génératrice
 \end{code}
 \note{Rien n'est vérifié à l'exécution : lancer \V|mypy «dossier»| ou \V|pyright|. Avant 3.12 : \V|T = TypeVar("T")|.}
 \end{bloc}
@@ -301,14 +301,26 @@ bilan = "outils_sei.bilan:main"  # commande bilan
 \note{\V|pip install -e .| : installé en mode édition, \V|bilan| devient une commande.}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 2 : concurrence =======================
-\begin{colonne}
+% ======================= colonne 5 : concurrence =======================
+\begin{colonne}[concurrence][col-b]
 \begin{bloc}{Threads ou processus ?}{ex}
-\begin{optab}[21mm]
-Attente (E/S) & réseau, disque, outils externes : \V|ThreadPoolExecutor| ou \V|asyncio|. \\
-Calcul (CPU)  & le GIL laisse un seul thread exécuter du Python : \V|ProcessPoolExecutor| (un processus par cœur). \\
-numpy         & libère le GIL dans ses calculs : vectoriser avant de paralléliser.
-\end{optab}
+\begin{schema}[x=1mm, y=1mm, >={Stealth[length=1.5mm]}, line width=0.6pt,
+    q/.style={draw=trait, rounded corners=1.2mm, fill=paper, inner sep=1.2mm, font=\fontbloc,
+              align=center},
+    r/.style={draw=cat, line width=0.9pt, fill=cat!12, inner sep=1.2mm, font=\fontbloc\bfseries,
+              align=center, text width=31mm},
+    o/.style={font=\fontbloc, text=note, inner sep=0.8pt}]
+  \node[q] (q1) at (0,0)   {attend des E/S ?};
+  \node[q] (q2) at (0,-8.5) {vectorisable ?};
+  \node[r, anchor=west] (r1) at (22,0)    {threads ou asyncio};
+  \node[r, anchor=west] (r2) at (22,-8.5) {numpy (libère le GIL)};
+  \node[r, anchor=west] (r3) at (22,-17)  {processus : 1 par cœur};
+  \draw[->] (q1) -- node[o, above] {oui} (r1);
+  \draw[->] (q1) -- node[o, left] {non} (q2);
+  \draw[->] (q2) -- node[o, above] {oui} (r2);
+  \draw[->] (q2) |- node[o, left, pos=0.25] {non} (r3);
+\end{schema}
+\note{GIL : un seul thread exécute du Python à la fois. Sans GIL : Python 3.13 \V|python3.13t| (expérimental).}
 \end{bloc}
 
 \begin{bloc}{concurrent.futures : N simulations}{ex}
@@ -327,7 +339,7 @@ with ThreadPoolExecutor(max_workers=8) as ex:
         seed, code = fut.result()
         print(seed, "OK" if code == 0 else "ÉCHEC")
 \end{code}
-\note{Les threads suffisent ici : ils attendent des processus externes. \V|ex.map(f, args)| rend les résultats dans l'ordre des arguments.}
+\note{Threads : ils attendent des processus externes. \V|ex.map(f, args)| : résultats dans l'ordre.}
 \end{bloc}
 
 \begin{bloc}{Calcul en parallèle}{ex}
@@ -362,8 +374,8 @@ asyncio.run(main())                  # point d'entrée
 \note{\V|async def| crée une coroutine ; \V|await| rend la main à la boucle d'événements. Un seul thread : un appel bloquant fige tout (\V|asyncio.to_thread(f)| pour l'isoler).}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 3 : qualité =======================
-\begin{colonne}
+% ======================= colonne 6 : qualité =======================
+\begin{colonne}[qualité][col-c]
 \begin{bloc}{Tests avec pytest}{io}
 \begin{code}
 # tests/test_fifo.py : fichiers test_*.py
