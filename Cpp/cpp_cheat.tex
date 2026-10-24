@@ -1,0 +1,449 @@
+% Fiche C++ — recto-verso A4 paysage
+% Source : cours POO 3A SEI (L01–L03, POO-1/2/3.md, labs) — contenu repris, corrigé et complété.
+% Complément de la fiche C (../C) : types, opérateurs, contrôle, pointeurs, mémoire,
+% préprocesseur et compilation n'y sont PAS répétés ; seul ce qu'ajoute le C++ figure ici.
+% Compiler : make (ici ou à la racine), ou xelatex cpp_cheat.tex — une seule passe suffit
+% Apparence : ../librairie (fiche.sty commun + thème). Macros de contenu :
+%   colonne (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : syn typ ctl ex io lib (couleurs dans le thème)
+%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
+%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Le code est en police à chasse fixe : les commentaires sont alignés à la main
+% (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
+% Après compilation : grep "\[fiche\]" cpp_cheat.log donne l'espace libre par colonne.
+\documentclass{article}
+\usepackage[c]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-c.tex
+\input{langage}   % coloration syntaxique : \lstdefinelanguage{CODE}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                     RECTO : LE LANGAGE OBJET
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\entete{C++}{recto · ce que le C++ ajoute au C}
+\noindent
+% ======================= colonne 1 : du C au C++ =======================
+\begin{colonne}
+\begin{bloc}{Du C au C++}{syn}
+\begin{code}
+#include <iostream>           // sans .h
+bool ok = true;               // type natif
+int *p = nullptr;             // remplace NULL
+auto x = 3.0;                 // type déduit : double
+for (int v : tab) { ... }     // parcours de conteneur
+for (auto &v : tab) v *= 2;   // par réf. : modifie
+int f(int a, int b = 0);      // argument par défaut
+\end{code}
+\sub{Surcharge de fonctions}
+\begin{code}
+void print(int v);            // même nom,
+void print(double v);         // paramètres différents
+void print(const char *s);
+int  print(int v);            // ERREUR : retour seul
+\end{code}
+\note{Signature = nom + portée + paramètres (+ \V|const|), \textbf{pas le retour} ;
+encodée dans le symbole : \V|print(int)| $\to$ \V|_Z5printi|. \V|extern "C"| pour lier du C.}
+\end{bloc}
+
+\begin{bloc}{Références}{typ}
+\begin{code}
+int i = 42;
+int &r = i;                   // alias, à initialiser
+r = 10;                       // i vaut 10 (pas de *)
+void inc(int &x) { x++; }     // paramètre de sortie
+void show(const Big &b);      // entrée sans copie
+inc(i);                       // appel sans &
+\end{code}
+\renewcommand\arraystretch{1.1}\arrayrulecolor{black!14}
+\begin{tabular}{@{}>{\bfseries}p{14mm}@{\hspace{1.5mm}}p{27mm}@{\hspace{1.5mm}}p{\dimexpr\linewidth-44mm}@{}}
+           & \V|T *p| pointeur  & \V|T &r| référence \\ \hline
+Init.      & facultative        & \textbf{obligatoire} \\
+Nul        & \V|nullptr|        & impossible \\
+Réaff.     & \V|p = &autre;|    & non : \V|r = b| copie b \\
+Arithm.    & \V|p++|  \V|p + i| & non \\
+Accès      & \V|*p|  \V|p->m|   & \V|r|  \V|r.m|
+\end{tabular}
+\piege{\V|f(int)| et \V|f(int &)| ensemble : \V|f(i)| est ambigu.
+Ne jamais renvoyer une référence vers une variable locale.}
+\end{bloc}
+
+\begin{bloc}{Les 4 casts}{typ}
+\begin{tab3}[0mm]{33mm}
+ & \V|static_cast<T>(x)|      & vérifié à la compilation \\
+ & \V|dynamic_cast<D *>(b)|   & à l'exécution ; sinon \V|nullptr| \\
+ & \V|const_cast<T *>(p)|     & ajoute / retire \V|const| \\
+ & \V|reinterpret_cast<T>(x)| & relit les bits bruts \\
+ & \V|(T)x|                   & cast C : à éviter
+\end{tab3}
+\begin{code}
+Base *b = new Derived();
+if (Derived *d = dynamic_cast<Derived *>(b))
+    d->execute();             // b est bien un Derived
+auto *r = reinterpret_cast<Regs *>(0x40001000);
+\end{code}
+\note{\V|dynamic_cast| : classe polymorphe (une méthode \V|virtual|) exigée.}
+\end{bloc}
+
+\begin{bloc}{vtable et coût}{typ}
+\begin{code}
+struct A { uint32_t id, flags; void f(); };
+struct B { uint32_t id, flags; virtual void f(); };
+sizeof(A);                    // 8
+sizeof(B);                    // 16 : + vptr (8 octets)
+\end{code}
+\note{Une \textbf{vtable} (adresses des méthodes virtuelles) par classe, un \textbf{vptr}
+par objet. Appel virtuel = une indirection.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : classes =======================
+\begin{colonne}
+\begin{bloc}{Anatomie d'une classe}{ctl}
+\begin{code}
+// Circle.hpp : interface
+#pragma once                  // ou garde #ifndef
+class Circle {
+public:
+    Circle(double r = 1.0);   // constructeur
+    ~Circle();                // destructeur
+    double area() const;      // ne modifie pas *this
+    static int count();       // sans objet, sans this
+private:
+    double radius;            // attribut
+    static int nb;            // un seul pour tous
+};
+// Circle.cpp : implémentation
+#include "Circle.hpp"
+int Circle::nb = 0;           // définition du static
+Circle::Circle(double r) : radius(r) { nb++; }
+Circle::~Circle() { nb--; }
+double Circle::area() const {
+    return 3.14159 * radius * radius;
+}
+// main.cpp
+Circle c(2.0);                // pile : auto-détruit
+Circle *pc = new Circle(3);   // tas
+pc->area();
+delete pc;                    // destr. + libération
+Circle::count();
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Construction et destruction}{ctl}
+\begin{code}
+class Duration {
+public:
+    Duration();                   // par défaut
+    explicit Duration(long s);    // pas de conversion
+    Duration(const Duration &o);  // copie
+    Duration &operator=(const Duration &o);
+    ~Duration();
+private:
+    const long value;
+    std::string unit;
+};
+Duration::Duration(long s)
+    : value(s), unit("s") {}      // liste d'init.
+Duration d1(60);                  // constructeur
+Duration d2 = d1;                 // constr. de copie
+d2 = d1;                          // operator=
+void f(Duration d);               // copiée à l'appel
+Duration d3 = 60;                 // ERREUR : explicit
+\end{code}
+\begin{optab}[15mm]
+Liste init.  & obligatoire pour : membres \V|const|, références, membres sans constructeur
+               par défaut, classe de base à paramètres \\
+Ordre        & celui de \textbf{déclaration} des membres, pas celui de la liste \\
+Cycle        & base $\to$ membres $\to$ corps ; destruction en ordre inverse \\
+Implicites   & copie, \V|operator=|, destructeur ; \V|T()| seulement si aucun constructeur.
+               \V|= default| les demande, \V|= delete| les interdit
+\end{optab}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : héritage =======================
+\begin{colonne}
+\begin{bloc}{Héritage et polymorphisme}{ctl}
+\begin{code}
+class Shape {                        // abstraite
+public:
+    Shape(std::string c) : color(c) {}
+    virtual ~Shape() = default;      // OBLIGATOIRE
+    virtual void draw() const = 0;   // virtuelle pure
+    virtual double area() const { return 0; }
+protected:
+    std::string color;               // pour les filles
+};
+class Rect : public Shape {
+public:
+    Rect(int w, int h) : Shape("red"), w(w), h(h) {}
+    void draw() const override;      // redéfinition
+    double area() const override { return w * h; }
+private:
+    int w, h;
+};
+void render(const Shape &s) {        // upcast
+    s.draw();                        // -> Rect::draw()
+}
+std::vector<Shape *> v = {new Rect(1, 2)};
+for (Shape *s : v) s->draw();        // appel dynamique
+\end{code}
+\begin{optab}[14mm]
+\V|virtual|  & résolu à l'exécution, selon le type réel \\
+\V|= 0|      & virtuelle pure $\Rightarrow$ classe abstraite, non instanciable ;
+               que des virtuelles pures = interface \\
+\V|override| & le compilateur vérifie la redéfinition · \V|final| l'interdit
+\end{optab}
+\piege{sans destructeur \V|virtual|, \V|delete| d'un \V|Shape *| oublie la partie \V|Rect|.
+\V|Shape s = rect;| tronque l'objet (\emph{slicing}).}
+\end{bloc}
+
+\begin{bloc}{Accès et héritage}{ctl}
+\begin{tab3}[9mm]{19mm}
+Accès  & \V|public|    & tout le monde \\
+       & \V|protected| & la classe et ses dérivées \\
+       & \V|private|   & la classe (et ses \V|friend|) \\
+Défaut & \V|struct|    & tout \V|public| \\
+       & \V|class|     & tout \V|private| (seule différence)
+\end{tab3}
+\note{Accès vérifié à la compilation seulement. Un objet ne contient que ses attributs ;
+les méthodes reçoivent \V|this| en paramètre caché.}
+
+\begin{optab}[17mm]
+Composition & « possède un » : attribut (\V|Movie| a une \V|Duration|) \\
+Héritage    & « est un » : \V|Rect| est une \V|Shape| (substituable)
+\end{optab}
+\begin{tab3}[9mm]{21mm}
+Mode & \V|: public B|    & droits inchangés \\
+     & \V|: protected B| & public devient protected \\
+     & \V|: private B|   & tout devient private (défaut)
+\end{tab3}
+\begin{code}
+class Product { public: float price; };
+class Paper : public virtual Product { ... };
+class Elec  : public virtual Product { ... };
+class Smartpad : public Paper, public Elec {};
+pad.price = 9.5f;             // une seule copie de price
+\end{code}
+\note{Sans \V|virtual| : deux \V|Product| (diamant), il faut écrire \V|pad.Paper::price|.
+Usage typique : hériter de plusieurs interfaces.}
+\end{bloc}
+\end{colonne}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                     VERSO : OUTILS ET BIBLIOTHÈQUE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\entete{C++}{verso · ressources, généricité et bibliothèque}
+\noindent
+% ======================= colonne 1 : opérateurs, ressources =======================
+\begin{colonne}
+\begin{bloc}{Surcharge d'opérateurs}{syn}
+\begin{code}
+class Complex {
+public:
+    Complex(double re = 0, double im = 0)
+        : re(re), im(im) {}
+    Complex operator+(const Complex &o) const {
+        return Complex(re + o.re, im + o.im);
+    }
+    Complex &operator+=(const Complex &o) {
+        re += o.re;  im += o.im;
+        return *this;                // chaînage
+    }
+    Complex &operator++();           // ++c
+    Complex operator++(int);         // c++ (int fictif)
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const Complex &c);
+private:
+    double re, im;
+};
+std::ostream &operator<<(std::ostream &os,
+                         const Complex &c) {
+    return os << c.re << " + " << c.im << "i";
+}
+Complex a(1, 2), b = a + 3.0;        // 3.0 -> Complex
+std::cout << a << '\n';
+\end{code}
+\note{\textbf{Méthode} si l'opérande gauche est l'objet, sinon \textbf{fonction libre}
+(\V|cout << c|, \V|2.0 + c|). Interdits : \V|::  .  .*  ?:  sizeof|.}
+\end{bloc}
+
+\begin{bloc}{Allocation et ressources}{lib}
+\begin{code}
+T *p = new T(args);                  // + constructeur
+delete p;                            // + destructeur
+T *t = new T[n];                     // n fois T()
+delete[] t;                          // pas delete seul
+auto u = std::make_unique<T>(args);  // delete auto
+auto s = std::make_shared<T>(args);  // partagé
+\end{code}
+\note{Échec : exception \V|std::bad_alloc|. Pointeurs intelligents : \V|<memory>|.}
+\sub{Règle des trois}
+\begin{code}
+class Buf {                          // possède un new[]
+    int *data;
+    size_t n;
+public:
+    Buf(size_t n) : data(new int[n]), n(n) {}
+    ~Buf() { delete[] data; }        // 1. destructeur
+    Buf(const Buf &o)                // 2. copie profonde
+        : data(new int[o.n]), n(o.n) {
+        std::copy(o.data, o.data + n, data);
+    }
+    Buf &operator=(const Buf &o) {   // 3. affectation
+        if (this != &o) {            // auto-affectation
+            delete[] data;
+            n = o.n;
+            data = new int[n];
+            std::copy(o.data, o.data + n, data);
+        }
+        return *this;
+    }
+};
+\end{code}
+\note{Copie par défaut = superficielle : deux objets, un seul tableau $\Rightarrow$ double
+\V|delete[]|. \textbf{RAII} : ressource prise dans le constructeur, rendue dans le destructeur.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : généricité =======================
+\begin{colonne}
+\begin{bloc}{Templates}{typ}
+\begin{code}
+template <typename T>
+T maxOf(T a, T b) { return a > b ? a : b; }
+maxOf(3, 7);                  // T = int, déduit
+maxOf<double>(3, 7.5);        // T imposé
+
+template <typename T1, typename T2>
+class Pair {
+public:
+    Pair(T1 a, T2 b) : first(a), second(b) {}
+    void print() const;
+    T1 first;
+    T2 second;
+};
+template <typename T1, typename T2>  // hors classe :
+void Pair<T1, T2>::print() const {   //   tout répéter
+    std::cout << first << " : " << second << '\n';
+}
+Pair<int, std::string> p(1, "un");
+
+template <typename T, int N>  // paramètre valeur
+class Array { T data[N]; };
+template <>                   // spécialisation
+class Array<bool, 8> { uint8_t bits; };
+// type qui dépend d'un paramètre : typename devant
+typename std::vector<T>::iterator it;
+\end{code}
+\piege{tout le code d'un template va dans le \V|.hpp| (instancié à la compilation),
+sinon \V|undefined reference| à l'édition de liens.}
+\end{bloc}
+
+\begin{bloc}{Fonctions comme objets}{ctl}
+\begin{code}
+struct Greater {              // foncteur
+    int thr;
+    bool operator()(int v) const { return v > thr; }
+};
+Greater g{42};  g(50);        // true
+
+int thr = 42;
+auto f = [thr](int v) { return v > thr; };
+auto h = [&](int v) -> bool { return v > thr; };
+std::function<bool(int)> fn = f;   // <functional>
+\end{code}
+\begin{tab3}[0mm]{13mm}
+ & \V|[]|          & ne capture rien \\
+ & \V|[=]| \V|[&]| & tout par copie · tout par référence \\
+ & \V|[x, &y]|     & x copié, y par référence \\
+ & \V|[this]|      & accès aux membres de l'objet
+\end{tab3}
+\note{Lambda = foncteur anonyme (intégrable, contrairement à un pointeur de fonction).
+\V|[&]| : danger si elle survit au bloc.}
+\end{bloc}
+
+\begin{bloc}{enum class et namespace}{syn}
+\begin{code}
+enum class Color : uint8_t { Red, Green, Blue };
+Color c = Color::Red;         // portée obligatoire
+int i = static_cast<int>(c);  // conversion explicite
+namespace phelma::proj1 {     // C++17 (sinon imbriquer)
+    void print();
+}
+phelma::proj1::print();
+namespace pp = phelma::proj1; // alias
+using namespace std;          // jamais dans un .hpp
+\end{code}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : bibliothèque standard =======================
+\begin{colonne}
+\begin{bloc}{Flux et chaînes}{io}
+\begin{code}
+std::cout << "x = " << x << '\n';   // sans flush
+std::cerr << "erreur" << std::endl; // '\n' + flush
+std::cin >> a >> b;                 // mot par mot
+std::getline(std::cin, ligne);      // ligne entière
+std::istringstream(ligne) >> mot >> n;
+std::ifstream in("f.txt");          // ofstream : écrire
+while (std::getline(in, ligne)) { ... }
+std::cout << std::setw(8) << std::setprecision(3) << x;
+\end{code}
+\sub{std::string}
+\begin{tabular}{@{}p{22mm}@{}p{22mm}@{}p{\dimexpr\linewidth-44mm}@{}}
+\V|s.size()|  & \V|s.empty()|   & \V|s[i]  s.at(i)| \\
+\V|s + t|     & \V|s += t|      & \V|s == t  s < t| \\
+\V|s.find(t)| & \V|s.c_str()|   & \V|s.substr(pos, n)| \\
+\V|std::stoi(s)| & \V|std::stod(s)| & \V|std::to_string(x)|
+\end{tabular}
+\note{\V|find| : \V|std::string::npos| si absent · \V|c_str()| : \V|const char *|}
+\end{bloc}
+
+\begin{bloc}{Conteneurs}{lib}
+\begin{code}
+std::vector<int> v = {3, 1, 2};
+v.push_back(4);  v.pop_back();  v.size();
+v[i];  v.at(i);               // at : out_of_range
+v.insert(v.begin() + 1, 9);  v.erase(v.begin());
+std::map<std::string, int> m;
+m["bob"] = 3;                 // crée la clé si absente
+if (m.count("ann")) { ... }   // ou m.find(k) != m.end()
+for (auto &[k, val] : m) ...  // C++17, trié par clé
+for (auto it = v.begin(); it != v.end(); ++it) *it;
+\end{code}
+\begin{tab3}[19mm]{16mm}
+\V|vector|        & accès O(1)  & contigu, insertion O(n) \\
+\V|list|          & accès O(n)  & chaînée, insertion O(1) \\
+\V|map| \V|set|   & O(log n)    & arbre trié par clé \\
+\V|unordered_map| & O(1) moy.   & table de hachage
+\end{tab3}
+\piege{\V|push_back| peut réallouer : itérateurs, pointeurs et références vers un
+\V|vector| deviennent invalides.}
+\end{bloc}
+
+\begin{bloc}{Algorithmes}{lib}
+\begin{code}
+std::sort(v.begin(), v.end());        // <algorithm>
+std::sort(v.begin(), v.end(),
+          [](int a, int b) { return a > b; });
+auto it = std::find(v.begin(), v.end(), 3);
+int n = std::count_if(v.begin(), v.end(), pred);
+v.erase(std::remove_if(v.begin(), v.end(), pred),
+        v.end());                     // supprime si pred
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Exceptions}{ctl}
+\begin{code}
+if (b == 0) throw std::invalid_argument("b nul");
+try {
+    r = safeDiv(a, b);
+} catch (const std::invalid_argument &e) {
+    std::cerr << e.what() << '\n';
+} catch (const std::exception &e) {   // plus général
+} catch (...) { throw; }              // tout : relance
+\end{code}
+\note{\V|exception| $\leftarrow$ \V|logic_error| (\V|invalid_argument|, \V|out_of_range|),
+\V|runtime_error|, \V|bad_alloc|. Locaux détruits à la remontée.}
+\end{bloc}
+\end{colonne}
+\end{document}

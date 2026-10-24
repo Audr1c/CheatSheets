@@ -1,0 +1,20 @@
+% --- Langage C++ pour listings ---
+% Classes de mots-clés : [1] rose · [2] cyan · [3] vert · [4] couleur du thème
+% (styles dans ../librairie/fiche.sty). Chargé par cpp_cheat.tex.
+\lstdefinelanguage{CODE}{
+  sensitive=true, alsoletter={\#},
+  morekeywords=[1]{if,else,for,while,do,return,break,continue,switch,case,default,
+    class,struct,public,private,protected,virtual,override,final,template,typename,
+    namespace,using,new,delete,this,friend,operator,try,catch,throw,noexcept,explicit,
+    static,const,constexpr,mutable,inline,enum,typedef,nullptr,true,false,sizeof,
+    auto,extern,static_cast,dynamic_cast,const_cast,reinterpret_cast},
+  morekeywords=[2]{int,float,double,char,void,bool,short,long,unsigned,signed,size_t,
+    uint8_t,uint32_t,string,vector,list,map,set,unordered_map,array,deque,pair,
+    function,unique_ptr,shared_ptr,ostream,istream,ifstream,ofstream,istringstream,
+    exception,runtime_error,invalid_argument,out_of_range,bad_alloc,iterator},
+  morekeywords=[3]{std,cout,cin,cerr,endl,getline,make_unique,make_shared,move,
+    sort,find,find_if,count_if,accumulate,remove_if,for_each,copy,to_string,
+    stoi,stod,setw,setprecision,fixed,
+    \#include,\#pragma,\#define,\#ifndef,\#endif},
+  morecomment=[l]{//}, morecomment=[s]{/*}{*/}, morestring=[b]", morestring=[b]',
+}
