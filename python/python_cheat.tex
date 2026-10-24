@@ -1,0 +1,439 @@
+% Fiche Python 3 (version ingénieur) — recto-verso A4 paysage
+% Source : pas de cours ; périmètre choisi : le langage (recto) et les scripts d'ingénieur
+%   (fichiers, CSV/JSON, argparse, subprocess, re, numpy, matplotlib, bits, pièges) au verso.
+% Forme une paire avec python_avance.tex (décorateurs, générateurs, typing, asyncio...) :
+%   ici seulement l'essentiel de ces sujets (itertools, logging, breakpoint), le détail est là-bas.
+% Compiler : make (ici ou à la racine), ou xelatex python_cheat.tex — une seule passe suffit
+% Apparence : ../librairie (fiche.sty + theme-python.tex : barre bleue, liseré jaune). Macros de contenu :
+%   colonne (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : syn typ ctl ex io lib (couleurs dans le thème)
+%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
+%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Le code est en police à chasse fixe : les commentaires sont alignés à la main
+% (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
+% Après compilation : grep "\[fiche\]" python_cheat.log donne l'espace libre par colonne.
+\documentclass{article}
+\usepackage[python]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-python.tex
+\input{langage_cheat}   % coloration syntaxique : \lstdefinelanguage{CODE}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                         RECTO : LE LANGAGE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\entete{Python 3}{recto · le langage}
+\noindent
+% ======================= colonne 1 : bases =======================
+\begin{colonne}
+\begin{bloc}{Opérateurs}{syn}
+\begin{tab3}[13mm]{26mm}
+Arithm.   & \V|+ - * / // % **| & \V|/| réel, \V|//| entier, \V|**| puissance \\
+Compar.   & \V|== != < <= >|      & chaînables : \V|0 <= i < n| \\
+Logiques  & \V|and or not|        & court-circuit, rendent un opérande \\
+Identité  & \V|is|, \V|is not|    & même objet (pour \V|None|) \\
+Appart.   & \V|in|, \V|not in|    & liste, chaîne, clé de dict \\
+Bits      & \V/& | ^ ~ << >>/     & sur les \V|int| \\
+Ternaire  & \V|a if «c» else b|   & une expression \\
+Morse     & \V|(n := len(x))|     & affecte dans une expression \badge{3.8}
+\end{tab3}
+\end{bloc}
+
+\begin{bloc}{Types de base}{typ}
+\begin{code}
+n = 42           # int, sans limite de taille
+x = 3.14         # float : double IEEE 754
+z = 2 + 3j       # complex
+ok = True        # bool (sous-classe d'int)
+s = "texte"      # str : Unicode, immuable
+b = b"\x01\xff"  # bytes
+r = None         # absence de valeur
+type(x), isinstance(x, (int, float))
+\end{code}
+\note{Immuables : \V|int float str tuple bytes frozenset|. Mutables : \V|list dict set| et la plupart des objets.}
+\end{bloc}
+
+\begin{bloc}{Nombres}{typ}
+\begin{code}
+int("ff", 16), int("0b101", 0)  # 255, 5
+hex(255), bin(5), oct(8)        # '0xff', '0b101', '0o10'
+-7 // 2, -7 % 2, divmod(17, 5)  # -4, 1, (3, 2)
+round(2.5), round(3.14159, 2)   # 2 (au pair), 3.14
+int(3.9), abs(-2), 2 ** 0.5     # 3 (tronque), 2, 1.414
+1_000_000, 1e-9, float("inf")
+import math                     # pi, sqrt, log2, ceil...
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Chaînes et f-strings}{typ}
+\begin{code}
+s[0], s[-1], s[1:4], s[::-1]      # [::-1] : inverse
+"a,b,c".split(",")                # ['a', 'b', 'c']
+", ".join(["a", "b"])             # 'a, b'
+s.strip(), s.lower(), s.upper()
+s.replace("a", "b"), s.find("x")  # -1 si absent
+s.startswith("x"), "ab" in s
+f"{x:.3f} {n:5d} {n:#06x}"        # '3.140    42 0x002a'
+f"{s:>10} {s:<10} {s:^10}"        # aligner sur 10
+f"{x=}"                           # 'x=3.14' (débogage)
+r"C:\new"                         # brute : \ non échappé
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Console}{io}
+\begin{code}
+print(a, b, sep=", ", end="")  # sans retour ligne
+nom = input("nom ? ")          # toujours une str
+n = int(input("n ? "))
+\end{code}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : collections =======================
+\begin{colonne}
+\begin{bloc}{Listes et tuples}{lib}
+\begin{code}
+l = [3, 1, 2]
+l.append(4); l.extend([5, 6])  # en place
+l.insert(0, 9); l.pop(); l.pop(0)
+l.remove(3)                    # 1re occurrence
+l.sort(key=abs, reverse=True)  # en place, rend None
+sorted(l)                      # nouvelle liste triée
+l.index(2), l.count(2), len(l)
+l[1:3] = []                    # suppr. une tranche
+t = (1, "a")                   # tuple : immuable
+a, *reste = [1, 2, 3]          # a=1, reste=[2, 3]
+a, b = b, a                    # échange
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Dictionnaires et ensembles}{lib}
+\begin{code}
+d = {"clk": 10, "rst": 0}
+d["en"] = 1                   # ajout / mise à jour
+d.get("x", 0)                 # défaut si absente
+d.setdefault("k", []).append(1)
+for k, v in d.items(): ...    # .keys() .values()
+d.pop("rst"); d | {"a": 1}    # retirer, fusionner
+"clk" in d                    # test de clé
+e = {1, 2, 3}; e.add(4)
+e | f, e & f, e - f, e ^ f    # union, inter, diff
+from collections import defaultdict, Counter
+cnt = Counter("abracadabra")  # {'a': 5, 'b': 2...}
+grp = defaultdict(list)       # grp[k].append(v)
+\end{code}
+\note{Clés : objets hachables (immuables). L'ordre d'insertion est conservé.}
+\end{bloc}
+
+\begin{bloc}{Compréhensions}{lib}
+\begin{code}
+[x**2 for x in range(10) if x % 2]  # liste
+[x if x > 0 else 0 for x in l]      # avec ternaire
+{k: v for k, v in zip(noms, vals)}  # dict
+{c.lower() for c in s}              # ensemble
+sum(x**2 for x in data)             # générateur
+[[0] * n for _ in range(m)]         # matrice m x n
+[x for ligne in m for x in ligne]   # aplatir
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Contrôle}{ctl}
+\begin{code}
+if x > 0:
+    ...
+elif x == 0:
+    ...
+else:
+    ...
+while «cond»:
+    if «fini»: break  # sort de la boucle
+    continue        # tour suivant
+match cmd.split():  # filtrage de motifs (3.10)
+    case ["go", dest]: aller(dest)
+    case ["stop"] | ["q"]: quitter()
+    case _: print("inconnu")
+\end{code}
+\note{Les blocs sont définis par l'indentation (4 espaces). \V|pass| = bloc vide.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : itérer, fonctions, classes =======================
+\begin{colonne}
+\begin{bloc}{Itérer}{ctl}
+\begin{code}
+for i in range(«début», «fin», «pas»): ...
+for i, x in enumerate(l, start=1): ...
+for a, b in zip(l1, l2): ...  # s'arrête au plus court
+for x in reversed(l): ...
+any(x > 0 for x in l), all(l)
+min(l, key=len), max(d, key=d.get)
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Fonctions}{ctl}
+\begin{code}
+def f(a, b=2, *args, k=0, **kw) -> int:
+    """Docstring : ce que fait f."""
+    return a + b               # None si pas de return
+f(1); f(1, 3, 4, 5, k=1, x=9)  # args=(4, 5), kw={'x': 9}
+f(*liste, **dico)              # dépaqueter à l'appel
+carre = lambda x: x * x        # fonction anonyme
+def g(x: float, y: list[int] | None = None): ...
+\end{code}
+\note{Paramètres après \V|*args| (ou \V|*|) : seulement par mot-clé. Les annotations ne sont pas vérifiées à l'exécution.
+Affecter une variable dans une fonction la rend locale : \V|global| / \V|nonlocal| pour modifier celle du dessus.}
+\end{bloc}
+
+\begin{bloc}{Exceptions}{ctl}
+\begin{code}
+try:
+    v = int(txt)
+except (ValueError, TypeError) as e:
+    print("invalide :", e)
+else:
+    ...  # si aucune exception
+finally:
+    ...  # toujours exécuté
+raise ValueError(f"mauvais n : {n}")
+class SimError(Exception): pass
+\end{code}
+\note{\V|with| ferme le fichier même en cas d'exception.}
+\end{bloc}
+
+\begin{bloc}{Classes}{ctl}
+\begin{code}
+class Reg:
+    nb = 0            # attribut de classe
+    def __init__(self, nom, w=8):
+        self.nom, self.w = nom, w
+        Reg.nb += 1
+    def __repr__(self):
+        return f"Reg({self.nom!r}, {self.w})"
+    @property
+    def maxi(self): return 2**self.w - 1
+class Compteur(Reg):  # héritage
+    def __init__(self, nom):
+        super().__init__(nom, 16)
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Modules et imports}{lib}
+\begin{code}
+import numpy as np        # alias
+from pathlib import Path  # un nom
+from . import utils       # relatif (paquet)
+if __name__ == "__main__": main()
+\end{code}
+\note{Fichier = module ; dossier avec \V|__init__.py| = paquet.}
+\end{bloc}
+\end{colonne}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                     VERSO : SCRIPTS D'INGÉNIEUR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\entete{Python 3}{verso · scripts d'ingénieur}
+\noindent
+% ======================= colonne 1 : fichiers =======================
+\begin{colonne}
+\begin{bloc}{Fichiers texte}{io}
+\begin{code}
+with open("in.txt", encoding="utf-8") as fh:
+    for ligne in fh:              # ligne par ligne
+        ligne = ligne.rstrip("\n")
+data = Path(«f»).read_bytes()       # binaire
+txt = open(«f»).read()              # tout d'un coup
+lignes = open(«f»).read().splitlines()
+with open("out.txt", "w") as fh:  # "a" = ajouter
+    fh.write(f"{n}\n")
+    print("ok", file=fh)
+\end{code}
+\note{Modes : \V|"r"| lecture, \V|"w"| écrase, \V|"a"| ajoute, \V|"b"| binaire (bytes).}
+\end{bloc}
+
+\begin{bloc}{Chemins (pathlib)}{io}
+\begin{code}
+from pathlib import Path
+p = Path("runs") / "synth" / "area.rpt"
+p.exists(), p.is_file(), p.is_dir()
+p.name, p.stem, p.suffix  # area.rpt area .rpt
+p.parent, p.with_suffix(".csv")
+p.read_text(); p.write_text("...")
+Path("out").mkdir(parents=True, exist_ok=True)
+for f in Path("runs").glob("*/area.rpt"): ...
+for f in Path(".").rglob("*.v"): ...  # récursif
+Path.cwd(), Path.home(), p.resolve()
+\end{code}
+\end{bloc}
+
+\begin{bloc}{CSV et JSON}{io}
+\begin{code}
+import csv, json
+with open("res.csv", newline="") as fh:
+    for row in csv.DictReader(fh):  # dict par ligne
+        f = float(row["freq"])      # valeurs en str
+with open("out.csv", "w", newline="") as fh:
+    w = csv.writer(fh)
+    w.writerow(["design", "area"])
+    w.writerows(lignes)
+cfg = json.load(open("cfg.json"))   # -> dict / list
+json.dump(cfg, open("o.json", "w"), indent=2)
+s = json.dumps(cfg); cfg = json.loads(s)  # en str
+import pandas as pd
+df = pd.read_csv("res.csv"); df["area"].mean()
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Squelette de script}{ex}
+\begin{code}
+#!/usr/bin/env python3
+"""Rassemble les rapports de synthèse."""
+import argparse, sys
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("dossier")  # positionnel
+    ap.add_argument("-o", "--out", default="res.csv")
+    ap.add_argument("-n", type=int, default=10)
+    ap.add_argument("-v", action="store_true")
+    args = ap.parse_args()      # args.out...
+    return 0
+if __name__ == "__main__":      # pas à l'import
+    sys.exit(main())
+\end{code}
+\note{\V|python3 script.py runs -o a.csv -v| ; \V|-h| est généré.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : outils =======================
+\begin{colonne}
+\begin{bloc}{Lancer des outils (subprocess)}{lib}
+\begin{code}
+import subprocess, os, shutil
+r = subprocess.run(["vsim", "-c", "-do", "run.do"],
+                   capture_output=True, text=True,
+                   cwd="sim", timeout=600)
+r.returncode, r.stdout, r.stderr
+subprocess.run(«cmd», check=True)  # exception si échec
+os.environ.get("HOME"); os.environ["SEED"] = "3"
+shutil.copy(«src», «dst»); shutil.rmtree(«dossier»)
+shutil.which("vivado")           # chemin ou None
+\end{code}
+\note{Passer une liste d'arguments plutôt qu'une chaîne avec \V|shell=True| : pas de souci d'espaces ni d'injection.}
+\end{bloc}
+
+\begin{bloc}{Expressions régulières (re)}{lib}
+\begin{code}
+import re
+m = re.search(r"Total area:\s+([\d.]+)", txt)
+if m: area = float(m.group(1))
+re.findall(r"\d+", "a1 b22 c333")  # ['1','22','333']
+re.sub(r"\s+", " ", txt)           # remplacer
+pat = re.compile(r"(?P<sig>\w+)\s*=\s*(?P<v>\d+)")
+for m in pat.finditer(txt):
+    print(m["sig"], int(m["v"]))
+\end{code}
+\begin{optab}[17mm]
+\V|. \d \w \s| & tout caractère, chiffre, mot, blanc \\
+\V|* + ? {n,m}| & 0+, 1+, 0 ou 1, de n à m (\V|*?| non gourmand) \\
+\V|^ $ \b| & début, fin, limite de mot \\
+\V|[a-f] (...)| & classe de caractères, groupe capturant
+\end{optab}
+\note{Toujours des chaînes brutes \V|r"..."| pour les motifs.}
+\end{bloc}
+
+\begin{bloc}{Exemple : rapports de synthèse en CSV}{ex}
+\begin{code}
+import csv, re
+from pathlib import Path
+RE_AREA = re.compile(r"Total cell area:\s+([\d.]+)")
+RE_PWR = re.compile(r"Total Dynamic Power\s+=\s+([\d.]+)")
+rows = []
+for rpt in sorted(Path("runs").glob("*/report.txt")):
+    txt = rpt.read_text()
+    a, p = RE_AREA.search(txt), RE_PWR.search(txt)
+    if not (a and p):
+        print(f"incomplet : {rpt}"); continue
+    rows.append([rpt.parent.name, float(a[1]),
+                 float(p[1])])
+with open("bilan.csv", "w", newline="") as fh:
+    w = csv.writer(fh)
+    w.writerow(["config", "area_um2", "power_mW"])
+    w.writerows(rows)
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Modules utiles}{lib}
+\begin{tab3}[16mm]{31mm}
+math       & \V|sqrt log2 ceil pi| & \V|isclose(a, b)| \\
+statistics & \V|mean median stdev|       & sur une liste \\
+itertools  & \V|product combinations|    & \V|chain groupby| \\
+random     & \V|seed randint choice|     & \V|random()| dans $[0,1[$ \\
+time       & \V|perf_counter sleep|      & chronométrer \\
+datetime   & \V|datetime.now()|          & \V|.strftime("%H:%M")| \\
+logging    & \V|basicConfig info| & plutôt que \V|print|
+\end{tab3}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : numpy, matplotlib, pièges =======================
+\begin{colonne}
+\begin{bloc}{numpy}{lib}
+\begin{code}
+import numpy as np
+a = np.array([1, 2, 3], dtype=float)
+np.zeros((3, 4)), np.ones(5), np.eye(3)
+np.arange(0, 1, 0.1), np.linspace(0, 1, 11)
+a.shape, a.dtype, a.reshape(3, 1), a.T
+a * 2 + 1, a @ b, np.sqrt(a)  # élément par élément
+m[1, :], m[:, 0], m[m > 0]    # tranche, masque
+a.mean(), a.std(), a.max(), a.argmax()
+m.sum(axis=0)                 # somme par colonne
+d = np.loadtxt("w.csv", delimiter=",", skiprows=1)
+np.savetxt("o.csv", d, delimiter=",", fmt="%.4g")
+\end{code}
+\note{Les tranches sont des vues (pas des copies) : \V|a.copy()| pour copier. Broadcasting : \V|(3,1) + (4,)| donne \V|(3,4)|.}
+\end{bloc}
+
+\begin{bloc}{matplotlib}{lib}
+\begin{code}
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(6, 3.5))
+ax.plot(t, v, label="v(t)")  # courbe
+ax.semilogy(f, err, "o--")   # log en y
+ax.set_xlabel("t (ns)"); ax.set_ylabel("V")
+ax.grid(True); ax.legend()
+fig.tight_layout(); fig.savefig("v.pdf")
+plt.show()                   # fenêtre
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Bits et registres}{ex}
+\begin{code}
+(x >> 4) & 0xF               # extraire bits 7..4
+x | (1 << 3), x & ~(1 << 3)  # mettre / effacer bit 3
+f"{x:08b}", f"{x:04X}"       # binaire / hexa sur n
+def signe(x, w):             # complément à 2
+    return x - (1 << w) if x >> (w - 1) else x
+x.bit_length(), bin(x).count("1")
+x.to_bytes(4, "little"), int.from_bytes(b, "big")
+import struct; struct.pack("<If", 7, 1.5)
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Environnement}{io}
+\begin{code}
+python3 -m venv .venv      # env. isolé
+source .venv/bin/activate  # (Windows : Scripts)
+pip install numpy matplotlib
+pip freeze > requirements.txt
+python3 -i script.py       # console après
+breakpoint()               # débogueur pdb
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Pièges}{ex}
+\begin{optab}[19mm]
+Défaut mutable & \V|def f(l=[])| garde la même liste entre les appels : défaut \V|None|. \\
+Alias & \V|b = a| ne copie pas. Copier : \V|a.copy()|, ou \V|copy.deepcopy(a)| si imbriqué. \\
+Liste de listes & \V|[[0]*3]*3| répète la même ligne : passer par une compréhension. \\
+Flottants & \V|0.1 + 0.2 != 0.3| : comparer avec \V|math.isclose|. \\
+\V|is| ou \V|==| & \V|is| teste l'identité : seulement pour \V|None|.
+\end{optab}
+\end{bloc}
+\end{colonne}
+\end{document}

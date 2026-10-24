@@ -1,0 +1,21 @@
+% --- Langage Python 3 pour listings ---
+% Classes de mots-clés : [1] rose · [2] cyan · [3] vert · [4] couleur du thème
+% (styles dans ../librairie/fiche.sty). Chargé par python_cheat.tex.
+% [1] mots-clés · [2] types · [3] fonctions / modules intégrés
+\lstdefinelanguage{CODE}{
+  sensitive=true, alsoletter={@},
+  morekeywords=[1]{False,None,True,and,as,assert,async,await,break,class,continue,def,
+    del,elif,else,except,finally,for,from,global,if,import,in,is,lambda,nonlocal,not,
+    or,pass,raise,return,try,while,with,yield,match,case},
+  morekeywords=[2]{int,float,complex,bool,str,bytes,list,tuple,dict,set,frozenset,
+    range,object,Path,ndarray,Exception,ValueError,KeyError,IndexError,TypeError,
+    FileNotFoundError,ZeroDivisionError,OSError,RuntimeError,StopIteration,
+    defaultdict,Counter,deque},
+  morekeywords=[3]{print,len,enumerate,zip,map,filter,sorted,reversed,sum,min,max,abs,
+    round,open,input,isinstance,type,super,any,all,iter,next,repr,id,hash,getattr,
+    hasattr,setattr,divmod,bin,hex,ord,chr,self,cls,@dataclass,@property,
+    __init__,__repr__,__name__,__doc__,
+    np,plt,os,sys,re,json,csv,math,subprocess,argparse,shutil,itertools,pathlib,
+    random,time,logging,statistics,struct,datetime},
+  morecomment=[l]{\#}, morestring=[b]", morestring=[b]',
+}

@@ -1,0 +1,27 @@
+% Thème Python : barre bleu Python, liseré et icône jaunes, catégories génériques.
+% Utilisé par python/python_cheat.tex et python/python_avance.tex.
+
+% catégories (liseré de l'onglet, sous-titres)
+\colorlet{cat-syn}{mk-pink}      % syntaxe, opérateurs
+\colorlet{cat-typ}{mk-cyan}      % types, données
+\colorlet{cat-ctl}{mk-purple}    % contrôle, fonctions
+\colorlet{cat-ex}{mk-orange}     % exemples, motifs typiques
+\colorlet{cat-io}{mk-green}      % E/S, outils, tests
+\colorlet{cat-lib}{mk-yellow}    % bibliothèque, structures de données
+\colorlet{cat}{cat-syn}
+
+% barre d'en-tête
+\definecolor{py-blue}{HTML}{306998}    % bleu du logo Python (foncé)
+\definecolor{py-dark}{HTML}{1C3F5E}
+\definecolor{py-yellow}{HTML}{FFD43B}  % jaune du logo, seulement sur fond bleu
+\colorlet{barre-fond}{py-blue}
+\colorlet{barre-bord}{py-dark}
+\colorlet{barre-icone}{py-yellow}
+\colorlet{barre-sep}{white!65!py-blue}
+\renewcommand\iconebarre{E73C}         % logo Python
+\renewcommand\tailleiconebarre{12}
+\setlength\barrey{4.3mm}               % texte remonté au-dessus du liseré
+\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{intégré} \
+  \legit{mk-grey}{\# commentaire} \ \legit{mk-purple}{«à remplir»}}
+\renewcommand\decorbarre{\fill[py-yellow] (1.8mm,1.2mm) rectangle (\linewidth-1.8mm,1.75mm);}
+\let\entete\entetecouleur

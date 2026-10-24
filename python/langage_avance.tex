@@ -1,0 +1,26 @@
+% --- Langage Python 3 pour listings ---
+% Classes de mots-clés : [1] rose · [2] cyan · [3] vert · [4] couleur du thème
+% (styles dans ../librairie/fiche.sty). Chargé par python_avance.tex.
+% [1] mots-clés · [2] types · [3] fonctions / modules / décorateurs intégrés
+\lstdefinelanguage{CODE}{
+  sensitive=true, alsoletter={@},
+  morekeywords=[1]{False,None,True,and,as,assert,async,await,break,class,continue,def,
+    del,elif,else,except,finally,for,from,global,if,import,in,is,lambda,nonlocal,not,
+    or,pass,raise,return,try,while,with,yield,match,case,type},
+  morekeywords=[2]{int,float,complex,bool,str,bytes,list,tuple,dict,set,frozenset,
+    range,object,Exception,ValueError,KeyError,TypeError,StopIteration,IndexError,
+    OSError,FileNotFoundError,
+    Iterator,Iterable,Generator,Callable,Optional,Protocol,TypedDict,Literal,Final,
+    TypeVar,Any,Self,NamedTuple,Enum,IntFlag,ABC,Path},
+  morekeywords=[3]{print,len,enumerate,zip,map,filter,sorted,sum,min,max,iter,next,
+    isinstance,super,getattr,setattr,repr,hash,format,self,cls,
+    @dataclass,@property,@staticmethod,@classmethod,@contextmanager,
+    @cache,@lru_cache,@abstractmethod,@total_ordering,@singledispatch,
+    @cached_property,@timer,@retry,@c,
+    __init__,__repr__,__str__,__eq__,__hash__,__lt__,__len__,__getitem__,
+    __iter__,__next__,__contains__,__call__,__enter__,__exit__,__add__,
+    __post_init__,__name__,__slots__,__mro__,
+    asyncio,itertools,functools,contextlib,dataclasses,typing,pytest,logging,
+    subprocess,time,os,sys,pdb,traceback},
+  morecomment=[l]{\#}, morestring=[b]", morestring=[b]',
+}

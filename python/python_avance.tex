@@ -1,0 +1,428 @@
+% Fiche Python 3 (version avancée) — recto-verso A4 paysage
+% Source : pas de cours ; complément de python_cheat.tex (bases, fichiers, numpy...) :
+%   ici itérateurs, générateurs, décorateurs, objets, context managers, typage,
+%   concurrence (threads, processus, asyncio), tests, débogage et pièges avancés.
+% Compiler : make (ici ou à la racine), ou xelatex python_avance.tex — une seule passe suffit
+% Apparence : ../librairie (fiche.sty + theme-python.tex, partagé avec python_cheat.tex). Macros de contenu :
+%   colonne (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : syn typ ctl ex io lib (couleurs dans le thème)
+%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
+%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Le code est en police à chasse fixe : les commentaires sont alignés à la main
+% (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
+% Après compilation : grep "\[fiche\]" python_avance.log donne l'espace libre par colonne.
+\documentclass{article}
+\usepackage[python]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-python.tex
+\input{langage_avance}   % coloration syntaxique : \lstdefinelanguage{CODE}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                         RECTO : LE LANGAGE AVANCÉ
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\entete{Python avancé}{recto · itérateurs, fonctions, objets}
+\noindent
+% ======================= colonne 1 : itérer, filtrer =======================
+\begin{colonne}
+\begin{bloc}{Itérateurs}{ctl}
+\begin{code}
+it = iter([1, 2, 3])  # appelle __iter__
+next(it), next(it)    # 1, 2 (appelle __next__)
+next(it, None)        # défaut, pas d'exception
+class Compte:         # itérateur à la main
+    def __init__(self, n): self.i, self.n = 0, n
+    def __iter__(self): return self
+    def __next__(self):
+        if self.i >= self.n: raise StopIteration
+        self.i += 1
+        return self.i
+\end{code}
+\note{Itérateur : \V|__iter__| + \V|__next__| ; ne se parcourt qu'une fois.}
+\end{bloc}
+
+\begin{bloc}{Générateurs}{ctl}
+\begin{code}
+def lire_mots(chemin):       # génératrice
+    with open(chemin) as fh:
+        for ligne in fh:
+            yield from ligne.split()  # délègue
+mots = lire_mots("log.txt")  # rien n'est lu ici
+for m in mots: ...           # lu à la demande
+def fib():
+    a, b = 0, 1
+    while True:              # infini : sans souci
+        yield a
+        a, b = b, a + b
+carres = (x * x for x in range(10**9))  # paresseux
+\end{code}
+\note{\V|yield| suspend la fonction ; l'appel suivant reprend juste après. Mémoire constante.}
+\end{bloc}
+
+\begin{bloc}{itertools}{lib}
+\begin{optab}[27mm]
+\V|islice(it, 5)|      & 5 premiers d'un itérateur \\
+\V|count(0, 2)|        & 0, 2, 4... à l'infini \\
+\V|chain(l1, l2)|      & enchaîner \\
+\V|product(r, r)|      & produit cartésien (boucles imbriquées) \\
+\V|combinations(l, 2)| & paires, sans ordre ni répétition \\
+\V|permutations(l)|    & tous les ordres \\
+\V|groupby(l, key)|    & groupes consécutifs (trier avant) \\
+\V|accumulate(l)|      & sommes cumulées \\
+\V|pairwise(l)|        & (a, b), (b, c)... \badge{3.10} \\
+\V|batched(l, 4)|      & paquets de 4 \badge{3.12} \\
+\V|zip_longest(a, b)|  & zip jusqu'au plus long
+\end{optab}
+\end{bloc}
+
+\begin{bloc}{match : motifs avancés}{ctl}
+\begin{code}
+match msg:
+    case {"op": "write", "adr": int(a), "data": d}:
+        ecrire(a, d)                  # motif de dict
+    case Point(x=0, y=y):             # motif de classe
+        ...
+    case [tete, *reste] if tete > 0:  # garde
+        ...
+    case int() | float() as v:        # alternative + nom
+        ...
+    case _:
+        raise ValueError(msg)
+\end{code}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : fonctions =======================
+\begin{colonne}
+\begin{bloc}{Fermetures (closures)}{syn}
+\begin{code}
+def compteur(debut=0):
+    n = debut
+    def inc(pas=1):
+        nonlocal n        # modifier n du dessus
+        n += pas
+        return n
+    return inc            # inc garde n en vie
+c = compteur(); c(); c()  # 1, 2
+fs = [lambda: i for i in range(3)]
+[f() for f in fs]         # [2, 2, 2] : liaison
+fs = [lambda i=i: i for i in range(3)]  # [0, 1, 2]
+\end{code}
+\note{Une fonction est un objet : on la passe, la rend, la range dans un dict. Une variable libre est lue à l'appel, pas à la création.}
+\end{bloc}
+
+\begin{bloc}{Signatures}{syn}
+\begin{code}
+def f(a, b, /, c, *, d): ...  # a, b : par position seule
+f(1, 2, 3, d=4); f(1, 2, c=3, d=4)  # d : par nom seul
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Décorateurs}{syn}
+\begin{code}
+import functools, time
+def timer(f):            # f -> nouvelle f
+    @functools.wraps(f)  # garde nom, doc
+    def wrapper(*args, **kwargs):
+        t0 = time.perf_counter()
+        res = f(*args, **kwargs)
+        dt = time.perf_counter() - t0
+        print(f"{f.__name__} : {dt:.3f} s")
+        return res
+    return wrapper
+@timer                   # run = timer(run)
+def run(n): ...
+def retry(n=3):          # avec paramètres :
+    def deco(f):         # un niveau de plus
+        @functools.wraps(f)
+        def wrapper(*a, **kw):
+            for k in range(n):
+                try: return f(*a, **kw)
+                except OSError:
+                    if k == n - 1: raise
+        return wrapper
+    return deco
+@retry(n=5)
+def telecharger(url): ...
+\end{code}
+\note{Empilés, ils s'appliquent de bas en haut : \V|@a @b def f| donne \V|a(b(f))|.}
+\end{bloc}
+
+\begin{bloc}{functools}{lib}
+\begin{code}
+from functools import cache, lru_cache, partial, reduce
+@cache                           # mémoïsation
+def fib(n): return n if n < 2 else fib(n-1) + fib(n-2)
+@lru_cache(maxsize=256)          # les 256 derniers
+def cout(cfg): ...               # args hachables
+hex8 = partial("{:08x}".format)  # hex8(42) : 0000002a
+\end{code}
+\note{Aussi : \V|@cached_property|, \V|@total_ordering|, \V|@singledispatch| (surcharge par type).}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : objets =======================
+\begin{colonne}
+\begin{bloc}{Méthodes spéciales}{typ}
+\begin{optab}[27mm]
+\V|__repr__ __str__|   & \V|repr(o)| pour déboguer, \V|str(o)| et \V|print| \\
+\V|__eq__ __hash__|    & \V|==| ; redéfinir \V|__eq__| retire le hash \\
+\V|__lt__ __le__...|   & \V|<|, \V|sorted|, \V|max| \\
+\V|__len__ __bool__|   & \V|len(o)|, \V|if o:| \\
+\V|__getitem__|        & \V|o[i]|, tranches ; rend itérable \\
+\V|__iter__|           & \V|for x in o| ; \V|__contains__| : \V|x in o| \\
+\V|__call__|           & \V|o(x)| : objet appelable \\
+\V|__add__ __radd__|   & \V|o + x|, \V|x + o| ; \V|__iadd__| : \V|+=| \\
+\V|__enter__ __exit__| & \V|with o:| \\
+\V|__getattr__|        & attribut introuvable
+\end{optab}
+\end{bloc}
+
+\begin{bloc}{Classes : compléments}{typ}
+\begin{code}
+class Temp:
+    __slots__ = ("_c",)  # pas de __dict__
+    def __init__(self, c): self.c = c
+    @property
+    def c(self): return self._c
+    @c.setter            # t.c = 20 valide
+    def c(self, v):
+        if v < -273.15: raise ValueError(v)
+        self._c = v
+    @classmethod         # autre constructeur
+    def depuis_f(cls, f): return cls((f - 32) / 1.8)
+from abc import ABC, abstractmethod
+class Bus(ABC):          # classe abstraite
+    @abstractmethod
+    def lire(self, adr: int) -> int: ...
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Héritage multiple}{typ}
+\begin{code}
+class Trace:  # mixin : un service
+    def log(self, m): print(type(self).__name__, m)
+class Uart(Trace, Periph): ...
+Uart.__mro__  # ordre de recherche
+\end{code}
+\note{\V|super()| appelle la classe suivante du MRO, pas forcément la mère écrite : l'appeler dans chaque \V|__init__|.}
+\end{bloc}
+
+\begin{bloc}{dataclasses et Enum}{typ}
+\begin{code}
+from dataclasses import dataclass, field, asdict, replace
+@dataclass(frozen=True, order=True, slots=True)
+class Run:
+    freq_mhz: float
+    nom: str = "base"
+    tags: list[str] = field(default_factory=list)
+    def __post_init__(self):  # validation
+        if self.freq_mhz <= 0: raise ValueError
+r = Run(100.0); asdict(r); replace(r, nom="opt")
+from enum import Enum, IntFlag, auto
+class Etat(Enum):
+    IDLE = auto(); RUN = auto()
+Etat.RUN.name, Etat["IDLE"], Etat(1)
+class Perm(IntFlag):
+    R = 4; W = 2; X = 1
+Perm.R | Perm.W               # combinable
+\end{code}
+\end{bloc}
+\end{colonne}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                VERSO : TYPAGE, CONCURRENCE, QUALITÉ
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\entete{Python avancé}{verso · typage, concurrence, qualité}
+\noindent
+% ======================= colonne 1 : with, typage, paquet =======================
+\begin{colonne}
+\begin{bloc}{Context managers}{ctl}
+\begin{code}
+class Chrono:
+    def __enter__(self):
+        self.t0 = time.perf_counter(); return self
+    def __exit__(self, typ, val, tb):
+        self.dt = time.perf_counter() - self.t0
+        return False     # True : avale l'exc.
+with Chrono() as c: travail()
+print(c.dt)
+from contextlib import contextmanager, suppress
+@contextmanager
+def dans(dossier):       # cd temporaire
+    avant = os.getcwd(); os.chdir(dossier)
+    try:
+        yield            # corps du with
+    finally:
+        os.chdir(avant)  # même si exception
+with dans("sim"), open("out.log", "w") as fh: ...
+with suppress(FileNotFoundError): os.remove("x")
+\end{code}
+\note{\V|ExitStack| : nombre variable de \V|with| ; \V|nullcontext()| : \V|with| qui ne fait rien.}
+\end{bloc}
+
+\begin{bloc}{Annotations de type}{typ}
+\begin{code}
+from typing import Callable, Iterator, Literal, Protocol
+def moy(xs: list[float]) -> float: ...
+def trouver(k: str) -> int | None: ...  # Optional
+cfg: dict[str, tuple[int, ...]] = {}
+Mode = Literal["rtl", "gate"]
+def appliquer(f: Callable[[int], str], x: int): ...
+def premier[T](xs: list[T]) -> T:       # générique
+    return xs[0]                        # 3.12
+type Vecteur = list[float]              # alias 3.12
+class Lisible(Protocol):                # duck typing
+    def read(self, n: int = -1) -> bytes: ...
+def charger(src: Lisible): ...          # tout objet
+def gen() -> Iterator[int]: yield 1     # avec read
+\end{code}
+\note{Rien n'est vérifié à l'exécution : lancer \V|mypy «dossier»| ou \V|pyright|. Avant 3.12 : \V|T = TypeVar("T")|.}
+\end{bloc}
+
+\begin{bloc}{Autres structures typées}{typ}
+\begin{code}
+from typing import NamedTuple, TypedDict
+class Pt(NamedTuple):  # tuple à champs nommés
+    x: float; y: float
+class Cfg(TypedDict):  # forme d'un dict (JSON)
+    freq: float; seed: int
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Paquet installable}{lib}
+\begin{code}
+# pyproject.toml
+[project]
+name = "outils-sei"
+version = "0.1.0"
+dependencies = ["numpy"]
+[project.scripts]
+bilan = "outils_sei.bilan:main"  # commande bilan
+\end{code}
+\note{\V|pip install -e .| : installé en mode édition, \V|bilan| devient une commande.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : concurrence =======================
+\begin{colonne}
+\begin{bloc}{Threads ou processus ?}{ex}
+\begin{optab}[21mm]
+Attente (E/S) & réseau, disque, outils externes : \V|ThreadPoolExecutor| ou \V|asyncio|. \\
+Calcul (CPU)  & le GIL laisse un seul thread exécuter du Python : \V|ProcessPoolExecutor| (un processus par cœur). \\
+numpy         & libère le GIL dans ses calculs : vectoriser avant de paralléliser.
+\end{optab}
+\end{bloc}
+
+\begin{bloc}{concurrent.futures : N simulations}{ex}
+\begin{code}
+import subprocess
+from concurrent.futures import (ThreadPoolExecutor,
+                                as_completed)
+def simuler(seed: int) -> tuple[int, int]:
+    r = subprocess.run(["vsim", "-c", "-do", "run.do",
+                        "-sv_seed", str(seed)],
+                       capture_output=True, text=True)
+    return seed, r.returncode
+with ThreadPoolExecutor(max_workers=8) as ex:
+    futs = [ex.submit(simuler, s) for s in range(32)]
+    for fut in as_completed(futs):  # ordre de fin
+        seed, code = fut.result()
+        print(seed, "OK" if code == 0 else "ÉCHEC")
+\end{code}
+\note{Les threads suffisent ici : ils attendent des processus externes. \V|ex.map(f, args)| rend les résultats dans l'ordre des arguments.}
+\end{bloc}
+
+\begin{bloc}{Calcul en parallèle}{ex}
+\begin{code}
+from concurrent.futures import ProcessPoolExecutor
+def cout(params): ...                  # pur calcul
+if __name__ == "__main__":             # obligatoire
+    with ProcessPoolExecutor() as ex:  # 1 par cœur
+        res = list(ex.map(cout, grille, chunksize=16))
+\end{code}
+\note{Fonctions et arguments sont copiés (pickle) vers chaque processus : pas de lambda, pas d'état partagé.}
+\end{bloc}
+
+\begin{bloc}{asyncio}{ex}
+\begin{code}
+import asyncio
+async def simuler(seed, sem):
+    async with sem:                  # 8 à la fois max
+        p = await asyncio.create_subprocess_exec(
+            "vsim", "-c", "-do", "run.do",
+            stdout=asyncio.subprocess.PIPE)
+        out, _ = await p.communicate()
+        return seed, p.returncode
+async def main():
+    sem = asyncio.Semaphore(8)
+    res = await asyncio.gather(
+        *(simuler(s, sem) for s in range(32)))
+    async with asyncio.timeout(60):  # 3.11
+        await asyncio.sleep(1)       # pas time.sleep
+asyncio.run(main())                  # point d'entrée
+\end{code}
+\note{\V|async def| crée une coroutine ; \V|await| rend la main à la boucle d'événements. Un seul thread : un appel bloquant fige tout (\V|asyncio.to_thread(f)| pour l'isoler).}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : qualité =======================
+\begin{colonne}
+\begin{bloc}{Tests avec pytest}{io}
+\begin{code}
+# tests/test_fifo.py : fichiers test_*.py
+import pytest
+from fifo import Fifo
+def test_vide():
+    assert Fifo(4).vide()     # assert simple
+@pytest.fixture
+def f():                      # préparation
+    return Fifo(4)            # partagée
+@pytest.mark.parametrize("n, plein",
+                         [(3, False), (4, True)])
+def test_plein(f, n, plein):  # f injectée
+    for i in range(n): f.push(i)
+    assert f.plein() == plein
+def test_erreur(f):
+    with pytest.raises(IndexError):
+        f.pop()
+assert 0.1 + 0.2 == pytest.approx(0.3)
+\end{code}
+\note{\V|pytest -x -v -k plein| : arrêt au 1\textsuperscript{er} échec, détaillé, filtre par nom. \V|tmp_path| : dossier temporaire fourni.}
+\end{bloc}
+
+\begin{bloc}{Débogage}{io}
+\begin{code}
+breakpoint()              # pause ici (pdb)
+python3 -m pdb script.py  # dès la 1re ligne
+import pdb; pdb.pm()      # après un plantage
+import traceback; traceback.print_exc()
+\end{code}
+\begin{optab}[13mm]
+\V|n s c| & ligne suivante, entrer dans l'appel, continuer \\
+\V|p «x»| & afficher une expression ; \V|pp| joli \\
+\V|l w q| & code autour, pile d'appels, quitter
+\end{optab}
+\end{bloc}
+
+\begin{bloc}{Journal et mesures}{io}
+\begin{code}
+import logging
+log = logging.getLogger(__name__)  # par module
+logging.basicConfig(level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s")
+log.info("run %d", n); log.exception("échec")
+python3 -m timeit "sum(range(10**6))"
+python3 -m cProfile -s cumtime script.py
+\end{code}
+\note{\V|log.exception| ajoute la trace : à appeler dans un \V|except|.}
+\end{bloc}
+
+\begin{bloc}{Pièges avancés}{ex}
+\begin{optab}[20mm]
+Générateur épuisé & un 2\textsuperscript{e} parcours est vide : refaire l'appel ou \V|list(g)|. \\
+Attribut de classe & \V|tags = []| au niveau classe : une seule liste pour toutes les instances. \\
+\V|except:| nu & attrape aussi \V|KeyboardInterrupt| : viser des exceptions précises. \\
+\V|__eq__| seul & l'objet n'est plus hachable (\V|set|, clé de \V|dict|). \\
+Threads et CPU & aucun gain à cause du GIL : processus. \\
+\V|await| oublié & \V|f()| seul crée la coroutine sans l'exécuter (« never awaited »).
+\end{optab}
+\end{bloc}
+\end{colonne}
+\end{document}
