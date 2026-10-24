@@ -3,17 +3,18 @@
 % Forme une paire avec ../UVM/uvm_cheat.tex : ici le langage, la conception et la
 %   simulation ; la vérification (classes, aléatoire, couverture, assertions, UVM) est là-bas.
 % Compiler : make (ici ou à la racine), ou xelatex verilog_cheat.tex — une seule passe suffit
-%   le dernier bloc de chaque colonne (blocfin) s'étire jusqu'en bas.
-% Apparence : ../librairie (fiche.sty commun + thème). Macros de contenu :
-%   bloc{titre}{catégorie} · blocfin{..}{..} = dernier bloc d'une colonne
-%   catégories : syn typ ctl hw tb agg
-%   code (listing) · \V|...| code en ligne · «...» dans le code = à remplir
-%   \sub sous-titre · \note remarque · \piege piège · \sv badge SystemVerilog
-%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Apparence : ../librairie (fiche.sty + theme-verilog.tex). Macros de contenu :
+%   colonne[titre][couleur] (3 par page, séparées par \colbreak) · bloc{titre}{catégorie}
+%   catégories : syn typ ctl hw tb agg (couleurs et icônes dans le thème)
+%   code · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \sv badge SystemVerilog · schema
+%   optab étiquette | texte · tab3 étiquette | code | remarque · grille{n} · typetab
+%   (largeurs mesurées par la librairie : celles écrites entre [] et {} sont ignorées)
 % Le code est en police à chasse fixe : les commentaires sont alignés à la main
 % (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
+% Après compilation : grep "\[fiche\]" verilog_cheat.log (place libre, collisions).
 \documentclass{article}
-\usepackage[verilog]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-verilog.tex
+\usepackage[verilog]{../librairie/fiche}   % apparence : ../librairie (fiche.sty + theme-verilog.tex)
 \input{langage}   % coloration syntaxique : \lstdefinelanguage{CODE}
 
 \begin{document}
@@ -22,8 +23,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \entete{Verilog / SystemVerilog}{recto · le langage}
 \noindent
-% ======================= colonne 1 : syntaxe =======================
-\begin{colonne}
+% ======================= colonne 1 : syntaxe, types Verilog =======================
+\begin{colonne}[opérateurs · types][col-a]
 \begin{bloc}{Opérateurs}{syn}
 \begin{tab3}[17mm]{22mm}
 Arithm.     & \V|+ - * / %|   & \V|**| puissance \\
@@ -55,44 +56,47 @@ Bases       & \V|'b 'o 'd 'h|  & binaire, octal, décimal, hexa \\
 Signé       & \V|4'sb1010|     & \V|s| = signé (vaut $-6$) \\
 Défaut      & \V|1973  -123|   & décimal, 32 bits, signé \\
 Sans taille & \V|'hcafe|       & 32 bits \\
-Exemples    & \V|4'b0001|      & \V|12'd1239| · \V|-'d12| · \V|'h900D| \\
 Séparateur  & \V|16'hBE_EF|    & \V|_| ignoré (lisibilité) \\
 x / z       & \V|4'b10xz|      & inconnu / haute impédance \\
 Remplissage & \V|'0 '1 'x 'z|  & \sv\ tous les bits à la valeur
 \end{tab3}
 \end{bloc}
 
-\begin{blocfin}{Types Verilog}{typ}
+\begin{bloc}{Types Verilog}{typ}
 \textbf{Logique 4 valeurs :} \V|0| \V|1| \V|x| inconnu · \V|z| haute impédance
 \begin{tab3}[17mm]{22mm}
 Nets        & \V|wire tri|       & fil · bus trois états \\
-            & \V|wand triand|    & ET câblé \\
-            & \V|wor trior|      & OU câblé \\
+            & \V|wand wor|       & ET / OU câblé \\
             & \V|tri0 tri1|      & tiré à 0 / à 1 \\
             & \V|supply0 supply1|& masse / alimentation \\
-Tirage      & \V|pullup pulldown| & 1 / 0 si non piloté \\
 Variables   & \V|reg|            & affectée dans un process \\
             & \V|integer|        & entier 32 bits signé \\
             & \V|real|           & flottant \\
             & \V|time realtime|  & temps de simulation
 \end{tab3}
-\sub{Vecteurs et tableaux}
+\sub{Vecteurs et mémoires}
 \begin{code}
 wire [31:0] a;                  // vecteur 32 bits
 reg  [15:0] b;                  // b[15] = MSB
-integer a [0:100];              // 101 entiers
-wire [31:0] a [0:1000];         // 1001 mots de 32 bits
-reg  [31:0] a [0:1000][1:20];   // tableau 2D
+integer t [0:100];              // 101 entiers
+reg  [31:0] m [0:1023];         // 1024 mots de 32 bits
+reg  [31:0] m2 [0:1023][1:20];  // tableau 2D
 \end{code}
-\end{blocfin}
+\sub{Conversions (cast) \sv}
+\begin{code}
+int'(3.7)        // = 4 (réel -> entier, arrondi)
+8'(x)            // taille : tronque / étend
+signed'(x)       // relit comme signé     ($signed)
+unsigned'(x)     // relit comme non signé ($unsigned)
+\end{code}
+\end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 2 : types =======================
-\begin{colonne}
+% ======================= colonne 2 : types SystemVerilog =======================
+\begin{colonne}[types SystemVerilog][col-b]
 \begin{bloc}{Types SystemVerilog}{typ}
 \begin{typetab}
 \V|bit|      & 2 & variable & non signé & vecteur 2 états \\
 \V|logic|    & 4 & variable & non signé & remplace \V|reg| / \V|wire| \\
-\V|reg|      & 4 & variable & non signé & \\
 \V|byte|     & 2 & 8        & signé     & ou caractère ASCII \\
 \V|shortint| & 2 & 16       & signé     & \\
 \V|int|      & 2 & 32       & signé     & \\
@@ -101,69 +105,66 @@ reg  [31:0] a [0:1000][1:20];   // tableau 2D
 \V|time|     & 4 & 64       & non signé &
 \end{typetab}
 \sub{Chaînes : string}
-\begin{tabular}{@{}l@{\hspace{3mm}}l@{\hspace{3mm}}l@{}}
-\V|s.len()|       & \V|s.getc(i)|     & \V|s.putc(i,c)| \\
-\V|s.substr(i,j)| & \V|s.compare(s2)| & \V|s.tolower()| \\
-\V|s.toupper()|   & \V|s.itoa(i)|     & \V|s.hextoa(i)| \\
-\V|s.bintoa(i)|   &                   &
-\end{tabular}
-\sub{Conversions (cast)}
+\begin{grille}{3}
+\V|s.len()|       & \V|s.getc(i)|     & \V|s.putc(i, c)| \\
+\V|s.substr(i, j)| & \V|s.compare(s2)| & \V|s.toupper()| \\
+\V|s.itoa(i)|     & \V|s.hextoa(i)|   & \V|s.atoi()|
+\end{grille}
+\end{bloc}
+
+\begin{bloc}{Énumérations et structures}{agg}
 \begin{code}
-int'(3.7)        // = 4 (réel -> entier, arrondi)
-8'(x)            // taille : tronque / étend
-signed'(x)       // relit comme signé     ($signed)
-unsigned'(x)     // relit comme non signé ($unsigned)
+typedef enum {RED, YELLOW, GREEN} color_t;
+typedef enum logic [1:0] {IDLE, RUN} state_t;  // codé
+color_t c = RED;
+c = c.next();  c.name();         // YELLOW, "YELLOW"
+typedef struct packed {          // packed : un vecteur
+  bit [7:0]  opcode;
+  bit [23:0] addr;
+} instr_t;
+instr_t ir;
+ir.opcode = 8'hAE;  ir = 32'hAE000010;   // champ · tout
+typedef union packed { int i; bit [31:0] b; } mot_t;
 \end{code}
 \end{bloc}
 
-\begin{blocfin}{Types utilisateur et agrégés}{agg}
-\sub{Énumérations}
+\begin{bloc}{Tableaux}{agg}
 \begin{code}
-enum {red, yellow, green} light;
-typedef enum {red, yellow, green} color_t;
-typedef «enum|struct|union|class» «nom_t»;
-\end{code}
-\sub{Structures et unions}
-\begin{code}
-struct { color_t pix; int a; } varA;
-varA.pix = yellow;
-typedef struct {
-  bit [7:0]  opcode;
-  bit [23:0] addr;
-} instruction_s;
-instruction_s IR;
-IR.opcode = 8'hAE;
-typedef union { int i; shortreal f; } num;
-\end{code}
-\sub{Tableaux packed / unpacked}
-\begin{code}
-bit   [7:0] c1;              // packed : vecteur
+bit   [7:0] c1;              // packed : vecteur de bits
 real  u [7:0];               // unpacked : tableau
-int   Array [0:7][0:31];     // 8 × 32 entiers
-int   Array [8][32];         // idem, notation C
+int   t [8][32];             // = [0:7][0:31], notation C
 logic [7:0] mem [0:255];     // mémoire 256 × 8 bits
-mem[5] = 0;                  // écrit le mot n°5
 data = mem[addr];            // lit le mot n°addr
+A = B;  A[i:j] = B[i:j];  A == B;   // copie, tranche, ==
 \end{code}
-\sub{Tableaux dynamiques}
+\sub{Dynamiques}
 \begin{code}
 bit [3:0] nib[];             // taille fixée au run
 nib = new[12];               // alloue 12 éléments
 nib = new[13](nib);          // agrandit, garde les 12
 nib.size();  nib.delete();   // taille · vide tout
 \end{code}
-\sub{Opérations sur tableaux}
+\sub{Files (queues)}
 \begin{code}
-A = B;                       // copie entière
-A[i:j] = B[i:j];             // tranche
-A[x+:c] = B[y+:c];           // c éléments depuis x / y
-A[i] = B[i];                 // un élément
-A == B;  A[i:j] != B[i:j];   // comparaison
+int q[$] = {3, 2, 7};          // file initialisée
+bit b[$:255];                  // 256 éléments au plus
+q.push_back(1);  q.push_front(0);
+x = q.pop_front();  y = q.pop_back();
+q.insert(i, v);  q.delete(i);  q.size();
+x = q[0];  y = q[$];           // premier · dernier
 \end{code}
-\end{blocfin}
+\sub{Tableaux associatifs}
+\begin{code}
+bit [20:0] tab[string];        // indexé par chaîne
+tab["toto"] = 21'h13cafe;
+if (tab.exists("titi")) tab.delete("titi");
+foreach (tab[k]) $display("%s", k);  // clés triées
+\end{code}
+\note{Aussi : \V|.num()| \V|.first(k)| \V|.next(k)| \V|.last(k)| \V|.prev(k)| ; \V|int t[*]| : index quelconque.}
+\end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 3 : contrôle =======================
-\begin{colonne}
+\begin{colonne}[contrôle · temps][col-c]
 \begin{bloc}{Structures de contrôle}{ctl}
 \begin{code}
 if («cond») begin
@@ -188,7 +189,7 @@ foreach (tab[i]) begin ... end
 do begin ... end while («cond»);
 forever begin ... end         // boucle infinie
 \end{code}
-\note{\V|casez| : \V|z| ou \V|?| = joker · \V|casex| : \V|x| et \V|z| jokers}
+\note{\V|casez| : \V|z| ou \V|?| = joker · \V|casex| : \V|x| et \V|z| jokers.}
 \end{bloc}
 
 \begin{bloc}{Délais et évènements}{ctl}
@@ -207,7 +208,7 @@ wait (done.triggered);    // l'attend (sans course)
 \end{code}
 \end{bloc}
 
-\begin{blocfin}{Tâches et fonctions}{ctl}
+\begin{bloc}{Tâches et fonctions}{ctl}
 \begin{code}
 task do_something;           // style Verilog
   input  REQ;
@@ -229,9 +230,9 @@ function bit [15:0] max_value(bit [15:0] a, b);
   return a < b ? b : a;      // style SV
 endfunction
 \end{code}
-\note{\textbf{task} : peut contenir \V|#|, \V|@|, \V|wait| ; pas de valeur de retour.\\
+\note{\textbf{task} : peut contenir \V|#|, \V|@|, \V|wait| ; pas de valeur de retour.
 \textbf{function} : s'exécute en temps nul, renvoie une valeur.}
-\end{blocfin}
+\end{bloc}
 \end{colonne}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,8 +241,8 @@ endfunction
 \newpage
 \entete{Verilog / SystemVerilog}{verso · conception et simulation ($\to$ vérif : fiche UVM)}
 \noindent
-% ======================= colonne 1 : module =======================
-\begin{colonne}
+% ======================= colonne 4 : module =======================
+\begin{colonne}[module][col-a]
 \begin{bloc}{Structure d'un module}{hw}
 \begin{code}
 module my_module_name (...);
@@ -271,7 +272,7 @@ mod u2 (clk, q);                    // par position
 \end{code}
 \end{bloc}
 
-\begin{blocfin}{Bloquant vs non bloquant}{hw}
+\begin{bloc}{Bloquant vs non bloquant}{hw}
 \begin{optab}[6mm]
 \V|=|  & \textbf{bloquant} : effectué avant l'instruction suivante \\
 \V|<=| & \textbf{non bloquant} : mis à jour à la fin du pas de temps (delta suivant)
@@ -289,31 +290,32 @@ always @(posedge clk) begin
 end
 \end{code}
 \piege{séquentiel $\Rightarrow$ \V|<=|, combinatoire $\Rightarrow$ \V|=|. Jamais les deux dans un même bloc.}
-\end{blocfin}
+\end{bloc}
 
-\begin{bloc}{Interfaces}{tb}
+\begin{bloc}{Mémoire (RAM, ROM)}{hw}
 \begin{code}
-interface apb_if (input logic clk);
-  logic        psel, penable, pready;
-  logic [31:0] paddr;
-  modport slave  (input  psel, penable, paddr,
-                  output pready);   // master : inverse
-  clocking cb @(posedge clk);     // vue synchrone
-    default input #1step output #1;
-    output psel, paddr;           // front + #1
-    input  pready;                // juste avant
-  endclocking
-endinterface
-module dut (apb_if.slave s); «...s.psel...» endmodule
-apb_if bus (clk);                 // instance (top)
-dut u (.s(bus));
-virtual apb_if vif = bus;         // handle (classes)
-@(vif.cb);  vif.cb.psel <= 1;     // synchrone
+logic [7:0] mem [0:255];
+initial $readmemh("init.hex", mem);   // contenu initial
+always_ff @(posedge clk) begin
+  if (we) mem[addr] <= din;           // écriture
+  dout <= mem[addr];                  // lecture synchrone
+end
 \end{code}
+\note{\V|init.hex| : un mot hexa par ligne (\V|$readmemb| : binaire). Lecture synchrone et
+écriture sur un front : reconnu comme bloc RAM à la synthèse.}
+\end{bloc}
+
+\begin{bloc}{Règles de synthèse}{hw}
+\begin{optab}
+\V|always_ff|   & séquentiel : \V|<=|, une horloge (+ reset asynchrone dans la liste) \\
+\V|always_comb| & combinatoire : \V|=|, sortie affectée dans toutes les branches \\
+\V|#| \V|initial| & ignorés (simulation seule ; \V|initial| admis sur FPGA) \\
+Un pilote       & un signal n'est affecté que dans un seul \V|always| ou \V|assign|
+\end{optab}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 2 : circuits =======================
-\begin{colonne}
+% ======================= colonne 5 : circuits =======================
+\begin{colonne}[circuits][col-b]
 \begin{bloc}{Circuit combinatoire}{hw}
 \begin{code}
 module mux2 (input  logic a, b, sel,
@@ -337,7 +339,7 @@ module flipflop_syncr (d, q, clk, rst_n);
     else            q <= d;
 endmodule
 \end{code}
-\note{Reset asynchrone :}\\ \V|always_ff @(posedge clk or negedge rst_n)|
+\note{Reset asynchrone : \V|always_ff @(posedge clk or negedge rst_n)|.}
 \sub{Compteur avec enable}
 \begin{code}
 always_ff @(posedge clk)
@@ -346,22 +348,20 @@ always_ff @(posedge clk)
 \end{code}
 \end{bloc}
 
-\begin{blocfin}{Machine à états (FSM)}{hw}
-\begin{center}\vspace{-1mm}
-\begin{tikzpicture}[>={Stealth[length=1.6mm]}, node distance=14mm, line width=0.6pt,
+\begin{bloc}{Machine à états (FSM)}{hw}
+\begin{schema}[>={Stealth[length=1.6mm]}, node distance=14mm, line width=0.6pt,
     st/.style={circle, draw=trait, fill=paper, minimum size=7.5mm, inner sep=0pt,
                font=\ttfamily\bfseries\fontsize{6}{6}\selectfont},
-    lbl/.style={font=\ttfamily\fontsize{5.8}{6}\selectfont, inner sep=1.5pt}]
+    lbl/.style={font=\ttfamily\fontsize{6}{6}\selectfont, inner sep=1.5pt}]
   \node[st] (I) {IDLE};
-  \node[st, right=of I, draw=cat-hw, line width=1pt] (R) {RUN};
+  \node[st, right=of I, draw=cat, line width=1pt] (R) {RUN};
   \node[st, right=of R] (D) {DONE};
-  \node[lbl, below=0.5mm of R, text=cat-hw] {busy = 1};
+  \node[lbl, below=0.5mm of R, text=cat!80!black] {busy = 1};
   \draw[->] (I) -- node[lbl, above] {start} (R);
   \draw[->] (R) -- node[lbl, above] {stop} (D);
   \draw[->] (D.north) to[bend right=14] (I.north);
   \draw[->] (I) to[loop left, looseness=5] node[lbl, left] {!start} (I);
-\end{tikzpicture}\vspace{-1.5mm}
-\end{center}
+\end{schema}
 \begin{code}
 module fsm (input  logic clk, rst_n, start, stop,
             output logic busy);
@@ -388,34 +388,57 @@ endmodule
 \end{code}
 \note{\textbf{Mealy} : sorties fonction de l'état \emph{et} des entrées $\to$ les calculer dans le \V|always_comb|.
 \V|next = state| par défaut évite les latchs.}
-\end{blocfin}
+\end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 3 : simulation =======================
-\begin{colonne}
+% ======================= colonne 6 : simulation =======================
+\begin{colonne}[simulation][col-c]
 \begin{bloc}{Testbench}{tb}
 \begin{code}
 `timescale 1ns/100ps
 module test_adder;
   logic [3:0] a, b;                  // signaux internes
-  fulladder dut (.a(a), .b(b), ...); // instanciation
+  logic [4:0] s;
+  adder dut (.a(a), .b(b), .s(s));   // instanciation
 
   logic clk = 1'b1;
   always #5 clk = ~clk;              // période 10 ns
 
   initial begin
-    sig = 0;  #10 sig = 1;           // à 10 ns
-    #10 sig = 0;                     // à 20 ns
-    $display("t=%0t a=%h", $time, a);
+    a = 0;  b = 3;                   // à 0 ns
+    #10 a = 1;                       // à 10 ns
+    @(posedge clk) a = 2;            // au front suivant
+    $display("t=%0t s=%h", $time, s);
     $finish;                         // fin de simulation
   end
 endmodule
 \end{code}
-\note{\V|$monitor| affiche à chaque changement · \V|$stop| pause · \V|$random| aléatoire}
+\note{\V|$monitor| affiche à chaque changement · \V|$stop| pause · \V|$urandom| aléatoire.}
 \sub{Formats de \$display}
 \begin{tab3}[0mm]{30mm}
  & \V|%b %o %d %h| & binaire, octal, décimal, hexa \\
  & \V|%s %t %0d|   & chaîne, temps, sans espaces
 \end{tab3}
+\end{bloc}
+
+\begin{bloc}{Interfaces}{tb}
+\begin{code}
+interface apb_if (input logic clk);
+  logic        psel, penable, pready;
+  logic [31:0] paddr;
+  modport slave  (input  psel, penable, paddr,
+                  output pready);   // master : inverse
+  clocking cb @(posedge clk);     // vue synchrone
+    default input #1step output #1;
+    output psel, paddr;           // front + #1
+    input  pready;                // juste avant
+  endclocking
+endinterface
+module dut (apb_if.slave s); «...s.psel...» endmodule
+apb_if bus (clk);                 // instance (top)
+dut u (.s(bus));
+virtual apb_if vif = bus;         // handle (classes)
+@(vif.cb);  vif.cb.psel <= 1;     // synchrone
+\end{code}
 \end{bloc}
 
 \begin{bloc}{Processus parallèles}{tb}
@@ -427,8 +450,6 @@ join                      // attend toutes
 // join_any : la 1re · join_none : aucune
 wait fork;                // attend les fils restants
 disable fork;             // tue les fils restants
-fork begin p = process::self(); «...» end join_none
-p.kill();                 // aussi await() status()
 \end{code}
 \sub{Communication entre processus}
 \begin{code}
@@ -439,30 +460,5 @@ semaphore sem = new(1);        // 1 clé
 sem.get(1); «section critique» sem.put(1);
 \end{code}
 \end{bloc}
-
-\begin{blocfin}{Files et tableaux associatifs}{agg}
-\sub{Files (queues)}
-\begin{code}
-int q[$] = {3, 2, 7};          // file initialisée
-bit b[$:255];                  // 256 éléments au plus
-q.push_back(1);  q.push_front(0);
-x = q.pop_front();  y = q.pop_back();
-q.insert(i, v);  q.delete(i);  q.size();
-x = q[0];  y = q[$];           // premier · dernier
-\end{code}
-\sub{Tableaux associatifs}
-\begin{code}
-integer    i_array[*];         // index quelconque
-bit [20:0] array_b[string];    // indexé par chaîne
-array_b["toto"] = 21'h13cafe;
-if (array_b.exists("titi")) array_b.delete("titi");
-\end{code}
-\begin{optab}[29mm]
-\V|.size() .exists(i)|       & nombre · 1 si l'index i existe \\
-\V|.delete(i)|               & supprime i (tout, sans argument) \\
-\V|.first(i) .next(i)|       & i $\leftarrow$ premier / suivant index \\
-\V|.last(i) .prev(i)|        & i $\leftarrow$ dernier / précédent
-\end{optab}
-\end{blocfin}
 \end{colonne}
 \end{document}
