@@ -1,0 +1,18 @@
+% Thème Verilog / SystemVerilog : barre « fenêtre » claire à trois pastilles, badge SV.
+% Utilisé par Verilog/verilog_cheat.tex (et repris par theme-uvm.tex).
+
+% catégories (liseré de l'onglet, sous-titres)
+\colorlet{cat-syn}{mk-pink}      % syntaxe, opérateurs
+\colorlet{cat-typ}{mk-cyan}      % types, données
+\colorlet{cat-ctl}{mk-purple}    % contrôle
+\colorlet{cat-hw}{mk-orange}     % matériel, conception
+\colorlet{cat-tb}{mk-green}      % testbench, simulation
+\colorlet{cat-agg}{mk-yellow}    % agrégats, tableaux
+\colorlet{cat}{cat-syn}
+
+\newcommand\sv{\badge{SV}}       % marque « SystemVerilog seulement »
+
+% barre d'en-tête
+\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{\$système} \
+  \legit{mk-grey}{// commentaire} \ \legit{mk-purple}{«à remplir»} \ \sv}
+\let\entete\entetefenetre

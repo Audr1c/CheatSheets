@@ -1,0 +1,18 @@
+% --- Langage SystemVerilog pour listings ---
+% Classes de mots-clés : [1] rose · [2] cyan · [3] vert · [4] couleur du thème
+% (styles dans ../librairie/fiche.sty). Chargé par verilog_cheat.tex.
+\lstdefinelanguage{CODE}{
+  sensitive=true, alsoletter={\$`},
+  morekeywords=[1]{module,endmodule,input,output,inout,parameter,localparam,assign,
+    always,always_ff,always_comb,always_latch,initial,begin,end,if,else,case,casez,
+    casex,endcase,default,for,foreach,repeat,while,do,forever,fork,join,join_none,
+    join_any,task,endtask,interface,endinterface,modport,clocking,endclocking,
+    mailbox,semaphore,process,new,function,endfunction,return,generate,endgenerate,genvar,
+    posedge,negedge,or,wait,disable,virtual,inside,typedef,enum,struct,union,packed,class,automatic,void},
+  morekeywords=[2]{wire,reg,logic,bit,byte,shortint,int,longint,integer,real,
+    shortreal,realtime,time,string,event,supply0,supply1,tri,triand,trior,tri0,
+    tri1,wand,wor,signed,unsigned},
+  morekeywords=[3]{\$display,\$monitor,\$finish,\$stop,\$time,\$random,
+    `timescale,`define,`include},
+  morecomment=[l]{//}, morecomment=[s]{/*}{*/}, morestring=[b]",
+}
