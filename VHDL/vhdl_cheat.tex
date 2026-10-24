@@ -4,17 +4,18 @@
 %   testbench complet, pièges).
 % Sœur de ../Verilog/verilog_cheat.tex (même gabarit).
 % Compiler : make (ici ou à la racine), ou xelatex vhdl_cheat.tex — une seule passe suffit
-% Apparence : ../librairie (fiche.sty commun + thème). Macros de contenu :
-%   colonne (3 par page, séparées par \colbreak) · bloc{titre}{cat}
-%   catégories : syn typ ctl ex io lib (couleurs dans le thème)
-%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
-%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
-%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Apparence : ../librairie (fiche.sty + theme-vhdl.tex). Macros de contenu :
+%   colonne[titre][couleur] (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : syn typ ctl ex io lib (couleurs et icônes dans le thème)
+%   code · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT} · schema
+%   optab étiquette | texte · tab3 étiquette | code | remarque
+%   (largeurs mesurées par la librairie : celles écrites entre [] et {} sont ignorées)
 % Le code est en police à chasse fixe : les commentaires sont alignés à la main
 % (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
-% Après compilation : grep "\[fiche\]" vhdl_cheat.log donne l'espace libre par colonne.
+% Après compilation : grep "\[fiche\]" vhdl_cheat.log (place libre, collisions).
 \documentclass{article}
-\usepackage[vhdl]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-vhdl.tex
+\usepackage[vhdl]{../librairie/fiche}   % apparence : ../librairie (fiche.sty + theme-vhdl.tex)
 \input{langage}   % coloration syntaxique : \lstdefinelanguage{CODE}
 
 \begin{document}
@@ -24,7 +25,7 @@
 \entete{VHDL}{recto · le langage}
 \noindent
 % ======================= colonne 1 : structure =======================
-\begin{colonne}
+\begin{colonne}[structure][col-a]
 \begin{bloc}{Bibliothèques}{lib}
 \begin{code}
 library ieee;
@@ -92,7 +93,7 @@ end package body;
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 2 : types =======================
-\begin{colonne}
+\begin{colonne}[types · littéraux][col-b]
 \begin{bloc}{std\_logic : 9 valeurs}{typ}
 \begin{tab3}[11.5mm]{21.5mm}
 \V|'U'|         & non initialisé  & début de simulation \\
@@ -127,9 +128,20 @@ signal mem : mem_t := (others => (others => '0'));
 \end{code}
 \end{bloc}
 
+\begin{bloc}{Littéraux et agrégats}{syn}
+\begin{code}
+'0' '1' 'Z'                -- std_logic : apostrophes
+"1010"   x"FF"   o"17"     -- vecteurs : guillemets
+16#FF#   2#1010#   1_000_000  -- entiers dans une base
+10 ns   1.5 us             -- time : espace obligatoire
+(others => '0')            -- tout à 0, toute taille
+(0 => '1', others => '0')  -- bit 0 à 1
+a & b      v(7 downto 4)   -- concaténation, tranche
+\end{code}
+\end{bloc}
+
 \begin{bloc}{Conversions (numeric\_std)}{lib}
-\par\vspace{1mm}\centering
-\begin{tikzpicture}[x=1mm,y=1mm]
+\begin{schema}[x=1mm,y=1mm]
   % chaîne verticale : descendre à gauche, remonter à droite
   \node[ty, minimum width=30mm] (v) at (0,0)   {std\_logic\_vector};
   \node[ty, minimum width=30mm] (u) at (0,-15) {unsigned \textcolor{ink!50}{|} signed};
@@ -140,27 +152,16 @@ signal mem : mem_t := (others => (others => '0'));
   \draw[cv] (6,-27.4)  -- node[fn,right,align=left]{to\_unsigned(i, N)\\to\_signed(i, N)} (6,-17.6);
   \node[fn,anchor=east,align=right] at (u.west) {signed(u), unsigned(s)\\(mêmes bits)~};
   \node[fn,anchor=west,align=left,text=ink!70] at (u.east) {~resize(x, N)\\(change la taille)};
-\end{tikzpicture}\par\raggedright
+\end{schema}
 \begin{code}
 y <= std_logic_vector(unsigned(a) + unsigned(b));
 n <= to_integer(unsigned(sel));  -- index
 r <= resize(s, 16);              -- signe étendu
 \end{code}
 \end{bloc}
-
-\begin{bloc}{Attributs}{typ}
-\begin{optab}[21mm]
-\V|v'length|         & nombre d'éléments \\
-\V|v'range|           & \V|7 downto 0| : pour \V|for i in v'range| \\
-\V|v'high|, \V|v'low| & bornes \\
-\V|v'left|, \V|v'right| & bornes dans l'ordre déclaré \\
-\V|T'image(x)| & texte de \V|x| (\V|integer'image(n)|) \\
-\V|clk'event|         & front : préférer \V|rising_edge(clk)|
-\end{optab}
-\end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 3 : instructions =======================
-\begin{colonne}
+\begin{colonne}[opérateurs · instructions][col-c]
 \begin{bloc}{Opérateurs}{syn}
 \begin{tab3}[13mm]{28mm}
 Arithm.  & \V|+ - * / **| & sur \V|unsigned|, \V|signed|, \V|integer| \\
@@ -210,16 +211,15 @@ end process;
 \note{Signal : nouvelle valeur à la fin du process ; variable \V|:=| : tout de suite.}
 \end{bloc}
 
-\begin{bloc}{Littéraux et agrégats}{syn}
-\begin{code}
-'0' '1' 'Z'                -- std_logic : apostrophes
-"1010"   x"FF"   o"17"     -- vecteurs : guillemets
-16#FF#   2#1010#   1_000_000  -- entiers dans une base
-10 ns   1.5 us             -- time : espace obligatoire
-(others => '0')            -- tout à 0, toute taille
-(0 => '1', others => '0')  -- bit 0 à 1
-a & b      v(7 downto 4)   -- concaténation, tranche
-\end{code}
+\begin{bloc}{Attributs}{typ}
+\begin{optab}[21mm]
+\V|v'length|         & nombre d'éléments \\
+\V|v'range|           & \V|7 downto 0| : pour \V|for i in v'range| \\
+\V|v'high|, \V|v'low| & bornes \\
+\V|v'left|, \V|v'right| & bornes dans l'ordre déclaré \\
+\V|T'image(x)| & texte de \V|x| (\V|integer'image(n)|) \\
+\V|clk'event|         & front : préférer \V|rising_edge(clk)|
+\end{optab}
 \end{bloc}
 \end{colonne}
 
@@ -229,8 +229,8 @@ a & b      v(7 downto 4)   -- concaténation, tranche
 \newpage
 \entete{VHDL}{verso · conception et simulation}
 \noindent
-% ======================= colonne 1 : circuits =======================
-\begin{colonne}
+% ======================= colonne 4 : circuits =======================
+\begin{colonne}[circuits][col-a]
 \begin{bloc}{Logique combinatoire}{ex}
 \begin{code}
 process (all)  -- VHDL-2008 : tout lu
@@ -247,6 +247,11 @@ sum  <= a xor b xor cin;
 cout <= (a and b) or (cin and (a xor b));
 \end{code}
 \note{Avant 2008 : mettre dans la liste de sensibilité tous les signaux lus, sinon simulation et synthèse divergent.}
+\sub{Trois états}
+\begin{code}
+b   <= a when oe = '1' else (others => 'Z');  -- sortie
+din <= pad;                                   -- inout lu
+\end{code}
 \end{bloc}
 
 \begin{bloc}{Registre N bits}{ex}
@@ -295,10 +300,9 @@ end process;
 front <= b and not b_r;  -- impulsion 0 -> 1
 \end{code}
 \end{bloc}
-
 \end{colonne}\colbreak
-% ======================= colonne 2 : hiérarchie, FSM =======================
-\begin{colonne}
+% ======================= colonne 5 : hiérarchie, FSM =======================
+\begin{colonne}[hiérarchie · FSM][col-b]
 \begin{bloc}{Instancier un composant}{lib}
 \begin{code}
 -- direct (VHDL-93) : pas de déclaration à faire
@@ -307,33 +311,37 @@ u_reg : entity work.reg
   port map (clk => clk, rst => rst, en => '1',
             d => d_in, q => open);  -- open : non relié
 -- classique : déclarer le composant, puis
-component fa is
-  port (a, b, cin : in  std_logic;
-        sum, cout : out std_logic);
-end component;
--- association par position (ordre des ports)
-f0 : fa port map (a(0), b(0), cin, s(0), c(0));
+component fa is port (a, b, cin : in  std_logic;
+  sum, cout : out std_logic); end component;
+f0 : fa port map (a(0), b(0), cin, s(0), c(0));  -- ordre
 \end{code}
-\note{Préférer l'association par nom (\V|=>|).}
-\end{bloc}
-
-\begin{bloc}{Additionneur N bits (generate)}{lib}
+\note{Préférer l'association par nom (\V|=>|) : l'ordre des ports ne compte plus.}
+\sub{Répliquer : additionneur N bits (generate)}
 \begin{code}
-signal c : std_logic_vector(N downto 0);
-...
+signal c : std_logic_vector(N downto 0);  -- retenues
 c(0) <= cin;
 g : for i in 0 to N-1 generate
   fa_i : entity work.fa
     port map (a => a(i), b => b(i), cin => c(i),
               sum => s(i), cout => c(i+1));
 end generate;
-cout <= c(N);
--- plus simple, sans composant :
-s <= std_logic_vector(unsigned(a) + unsigned(b));
+cout <= c(N);                 -- + simple : Conversions
 \end{code}
 \end{bloc}
 
 \begin{bloc}{Machine à états (Moore)}{ex}
+\begin{schema}[>={Stealth[length=1.6mm]}, node distance=13mm, line width=0.6pt,
+    st/.style={circle, draw=trait, fill=paper, minimum size=7.5mm, inner sep=0pt,
+               font=\ttfamily\bfseries\fontsize{6}{6}\selectfont},
+    lbl/.style={font=\ttfamily\fontsize{6}{6}\selectfont, inner sep=1.5pt}]
+  \node[st] (I) {IDLE};
+  \node[st, right=of I] (A) {ATT};
+  \node[st, right=of A, draw=cat, line width=1pt] (R) {RUN};
+  \node[lbl, right=0.8mm of R, text=cat!80!black] {busy = 1};
+  \draw[->] (I) -- node[lbl, above] {go} (A);
+  \draw[->] (A) -- node[lbl, above] {ok} (R);
+  \draw[->] (R.north) to[bend right=16] node[lbl, above] {fin} (I.north);
+\end{schema}
 \begin{code}
 type etat_t is (IDLE, ATT, RUN);
 signal etat : etat_t;
@@ -345,38 +353,36 @@ begin
       when ATT => if ok = '1' then etat <= RUN; end if;
       when RUN => if fin = '1' then etat <= IDLE; end if;
     end case;
-    if rst = '1' then  -- reset synchrone : la
-      etat <= IDLE;    -- dernière affectation
-    end if;            -- l'emporte
+    if rst = '1' then etat <= IDLE; end if;  -- l'emporte
   end if;
 end process;
 busy <= '1' when etat = RUN else '0';  -- sorties
 \end{code}
 \end{bloc}
 
-\begin{bloc}{Trois états}{ex}
+\begin{bloc}{RAM synchrone}{ex}
 \begin{code}
-b   <= a when oe = '1' else (others => 'Z');  -- sortie
-din <= pad;                                   -- inout lu
-\end{code}
-\end{bloc}
-
-\begin{bloc}{Afficher des valeurs}{io}
-\begin{code}
-report "cnt = " & integer'image(to_integer(cnt));
-report "v = " & to_hstring(v);  -- VHDL-2008 (hexa)
-report "t = " & time'image(now);
+type ram_t is array (0 to 2**AW - 1)
+  of std_logic_vector(DW-1 downto 0);
+signal ram : ram_t;
+process (clk)
+begin
+  if rising_edge(clk) then
+    if we = '1' then
+      ram(to_integer(unsigned(adr))) <= din;
+    end if;
+    dout <= ram(to_integer(unsigned(adr)));  -- 1 cycle
+  end if;
+end process;                  -- reconnu comme BRAM
 \end{code}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 3 : simulation =======================
-\begin{colonne}
+% ======================= colonne 6 : simulation =======================
+\begin{colonne}[simulation][col-c]
 \begin{bloc}{Testbench}{io}
 \begin{code}
-library ieee;
-use ieee.std_logic_1164.all;
-entity tb_and2 is             -- pas de ports
-end entity;
+library ieee;  use ieee.std_logic_1164.all;
+entity tb_and2 is end entity; -- pas de ports
 architecture sim of tb_and2 is
   signal a, b, c : std_logic := '0';
   signal clk     : std_logic := '0';
@@ -403,31 +409,32 @@ end architecture;
 \V|wait;| & suspendre pour toujours \\
 \V|severity| & \V|note warning error failure| (arrêt)
 \end{optab}
+\sub{Afficher des valeurs}
+\begin{code}
+report "cnt = " & integer'image(to_integer(cnt));
+report "v = " & to_hstring(v);  -- VHDL-2008 (hexa)
+report "t = " & time'image(now);
+\end{code}
+\sub{Lire des vecteurs dans un fichier (textio)}
+\begin{code}
+use std.textio.all;        -- < 2008 : + std_logic_textio
+file f : text open read_mode is "stim.txt";
+variable l : line;
+variable v : std_logic_vector(7 downto 0);
+while not endfile(f) loop
+  readline(f, l);  read(l, v);    -- une ligne : 01011010
+  a <= v;  wait until rising_edge(clk);
+end loop;
+\end{code}
 \end{bloc}
 
-\begin{bloc}{RAM synchrone}{ex}
-\begin{code}
-type ram_t is array (0 to 2**AW - 1)
-  of std_logic_vector(DW-1 downto 0);
-signal ram : ram_t;
-process (clk)
-begin
-  if rising_edge(clk) then
-    if we = '1' then
-      ram(to_integer(unsigned(adr))) <= din;
-    end if;
-    dout <= ram(to_integer(unsigned(adr)));  -- 1 cycle
-  end if;
-end process;
-\end{code}
-\note{Motif reconnu comme bloc mémoire (BRAM) à la synthèse.}
-\end{bloc}
 
 \begin{bloc}{Pièges}{ex}
 \begin{optab}[19mm]
 Signal / variable & lire un signal juste après l'avoir affecté rend l'ancienne valeur. \\
 Latch & un \V|if| sans \V|else| dans un process combinatoire mémorise : mettre une valeur par défaut. \\
 Pilotes multiples & deux process sur un signal : \V|'X'| si les valeurs s'opposent, refusé sur \V|integer|. \\
+\V|if s then| & refusé si \V|s| est un \V|std_logic| : écrire \V|if s = '1' then| (\V|boolean| attendu, sauf VHDL-2008). \\
 Mots réservés & \V|bus|, \V|in|, \V|out|, \V|range|... ne peuvent pas nommer un signal. \\
 \V|downto| / \V|to| & \V|(7 downto 0)| : bit 7 à gauche (MSB) ; ne pas mélanger. \\
 Init. & \V|signal s : ... := '0'| ne sert qu'en simulation (ou FPGA) : prévoir un reset.
