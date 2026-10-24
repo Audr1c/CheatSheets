@@ -1,0 +1,26 @@
+% --- Langage SystemVerilog + UVM pour listings ---
+% Classes de mots-clés : [1] rose · [2] cyan · [3] vert · [4] couleur du thème
+% (styles dans ../librairie/fiche.sty). Chargé par uvm_cheat.tex.
+\lstdefinelanguage{CODE}{
+  sensitive=true, alsoletter={\$`},
+  morekeywords=[1]{module,endmodule,input,output,interface,endinterface,package,
+    endpackage,import,class,endclass,extends,virtual,function,endfunction,task,
+    endtask,new,super,this,local,protected,static,extern,rand,randc,constraint,
+    inside,dist,solve,before,soft,with,foreach,if,else,begin,end,return,forever,
+    repeat,fork,join,join_any,join_none,initial,always,typedef,enum,posedge,
+    negedge,null,type,randcase,case,endcase,for,while,do,covergroup,endgroup,
+    coverpoint,bins,ignore_bins,illegal_bins,cross,binsof,intersect,option,
+    property,endproperty,sequence,endsequence,assert,assume,cover,disable,iff,
+    bind,default,clocking,endclocking,const},
+  morekeywords=[2]{bit,logic,int,byte,string,event,real,integer,reg,wire,
+    unsigned,signed,void,uvm_object,uvm_component,uvm_test,uvm_env,uvm_agent,
+    uvm_driver,uvm_monitor,uvm_sequencer,uvm_sequence,uvm_sequence_item,
+    uvm_scoreboard,uvm_phase,uvm_analysis_port,uvm_config_db,uvm_object_wrapper},
+  morekeywords=[3]{\$display,\$sformatf,\$cast,\$error,\$rose,\$fell,\$stable,
+    \$past,\$onehot,\$onehot0,\$isunknown,\$urandom,\$urandom_range,\$countones,
+    `uvm_component_utils,`uvm_object_utils,`uvm_object_utils_begin,
+    `uvm_object_utils_end,`uvm_field_int,`uvm_field_enum,`uvm_info,`uvm_warning,
+    `uvm_error,`uvm_fatal,`uvm_do,`uvm_do_with,`uvm_analysis_imp_decl,`include,
+    `timescale,run_test},
+  morecomment=[l]{//}, morecomment=[s]{/*}{*/}, morestring=[b]",
+}

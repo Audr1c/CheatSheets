@@ -1,0 +1,15 @@
+% Thème SystemVerilog vérification / UVM : celui de Verilog (les deux fiches forment une
+% paire) + catégories propres à la vérification et macros `uvm dans la légende.
+% Utilisé par UVM/uvm_cheat.tex.
+
+\input{\fiche@dir theme-verilog}
+
+% catégories propres à la fiche UVM
+\colorlet{cat-oop}{mk-purple}    % classes
+\colorlet{cat-rnd}{mk-pink}      % aléatoire, séquences
+\colorlet{cat-cov}{mk-yellow}    % couverture
+\colorlet{cat-sva}{mk-orange}    % assertions, vérification
+\colorlet{cat-uvm}{mk-cyan}      % architecture UVM
+
+\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{`macro \$système} \
+  \legit{mk-grey}{// commentaire} \ \legit{mk-purple}{«à remplir»} \ \sv}

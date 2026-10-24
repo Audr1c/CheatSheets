@@ -1,0 +1,478 @@
+% Fiche SystemVerilog pour la vérification + UVM — recto-verso A4 paysage
+% Sources : AED_SV_UVM_Cheatsheet (pages 3-6), cours Phelma B (classes, aléatoire),
+%   C (UVM, séquences), D (couverture, scoreboard), code des TP 1 à 4.
+% Complète la fiche Verilog (../Verilog) : le langage, la conception, les interfaces,
+%   les threads et les tableaux dynamiques sont là-bas ; ici seulement la vérification.
+% Compiler : make (ici ou à la racine), ou xelatex uvm_cheat.tex — une seule passe suffit
+% Apparence : ../librairie (fiche.sty + theme-uvm.tex = thème Verilog + catégories oop rnd cov sva uvm).
+% Macros : bloc{titre}{cat} · code · \V|...| · «...» = à remplir · \sub · \note · \piege
+%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Le code est en chasse fixe : commentaires alignés à la main (les « » ne comptent pas).
+% Après compilation : grep "\[fiche\]" uvm_cheat.log donne l'espace libre par colonne.
+\documentclass{article}
+\usepackage[uvm]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-uvm.tex
+\input{langage}   % coloration syntaxique : \lstdefinelanguage{CODE}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                RECTO : SYSTEMVERILOG POUR LA VÉRIFICATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\entete{SystemVerilog · vérification}{recto · classes, aléatoire, couverture, assertions}
+\noindent
+% ======================= colonne 1 : classes =======================
+\begin{colonne}
+\begin{bloc}{Classes et objets}{oop}
+\begin{code}
+class Packet;
+  bit [31:0] addr;             // public (défaut)
+  local     int id;            // cette classe seule
+  protected int crc;           // + classes filles
+  static    int count = 0;     // partagé par tous
+  function new(bit [31:0] a = 0);  // constructeur,
+    addr = a;  count++;            // sans type retour
+  endfunction
+  virtual function void print();   // redéfinissable
+    $display("addr=%h", addr);
+  endfunction
+  extern function int calc();  // corps hors classe
+endclass
+function int Packet::calc();   // corps de calc()
+  return addr ^ crc;
+endfunction
+\end{code}
+\sub{Héritage}
+\begin{code}
+class BigPacket extends Packet;
+  rand bit [7:0] len;
+  function new(bit [31:0] a = 0);
+    super.new(a);              // constructeur parent
+  endfunction
+  virtual function void print();
+    super.print();             // méthode du parent
+    $display("len=%0d", len);
+  endfunction
+endclass
+\end{code}
+\sub{Handles, polymorphisme, cast}
+\begin{code}
+Packet    p;                   // handle = null
+BigPacket b = new(32'h10);     // alloue l'objet
+p = b;                         // fille -> parent : ok
+p.print();                     // BigPacket::print
+if (!$cast(b, p))              // parent -> fille :
+  $error("mauvais type");      //   vérifié au run
+n = Packet::count;             // membre statique
+\end{code}
+\note{Pas de destructeur (ramasse-miettes) · \V|this| objet courant ·
+\V|super| parent · \V|typedef class C;| déclaration anticipée.}
+\sub{Classe paramétrée}
+\begin{code}
+class Stack #(type T = int, int N = 8);
+  T items[$:N-1];              // file bornée
+  function void push(T v); items.push_back(v); endfunction
+endclass
+Stack #(string) s = new;
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Métriques de couverture}{cov}
+\begin{optab}[15mm]
+Code        & lignes / blocs, branches, conditions, toggle (0$\to$1, 1$\to$0),
+              états et transitions des FSM. Automatique, dit ce qui a été \emph{exécuté} \\
+Fonct.      & \V|covergroup| écrits à partir du plan de vérif : dit quelles
+              \emph{fonctions} ont été exercées \\
+Assertions  & \V|cover property| : scénarios atteints
+\end{optab}
+\begin{tab3}[18mm]{21mm}
+Code 100\,\%   & Fonct.~<~100\,\% & tests incomplets \\
+Code < 100\,\% & Fonct.~100\,\%   & plan de vérif incomplet \\
+Code 100\,\%   & Fonct.~100\,\%   & bien, mais rien d'oublié ?
+\end{tab3}
+\note{Exécuté $\neq$ vérifié : il faut aussi des checkers (assertions, scoreboard).}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : aléatoire =======================
+\begin{colonne}
+\begin{bloc}{Variables aléatoires et contraintes}{rnd}
+\begin{code}
+typedef enum {LOW, MID, HIGH} kind_t;
+class Trans;
+  rand  bit [15:0] addr;
+  rand  bit [31:0] data;
+  rand  kind_t     kind;
+  randc bit [3:0]  id;         // cyclique (permutation)
+  rand  int        q[];        // taille aussi aléatoire
+  constraint c_align { addr[1:0] == 2'b00; }
+  constraint c_range {
+    kind == LOW  -> addr inside {[0:15]};
+    kind == HIGH -> addr inside {[128:255]};
+  }
+  constraint c_q { q.size() inside {[1:8]};
+                   foreach (q[i]) q[i] < 100; }
+endclass
+\end{code}
+\sub{Formes de contraintes}
+\begin{tab3}[17mm]{33mm}
+Relation    & \V|a < b; a != 0;|          & expression booléenne \\
+Ensemble    & \V|x inside {[0:9], 12};|   & intervalles et valeurs \\
+Exclusion   & \V|!(x inside {[0:9]});|    & hors de l'ensemble \\
+Implication & \V|c -> x == 0;|            & si c alors... \\
+Condition   & \V|if (c) {..} else {..}| & idem, avec else \\
+Douce       & \V|soft len < 20;|          & abandonnée si conflit \\
+Ordre       & \V|solve k before a;|       & tire k d'abord \\
+Tableau     & \V|foreach (q[i]) {...}|    & par élément
+\end{tab3}
+\sub{Distribution : dist}
+\begin{code}
+x dist { [100:102] := 1,     // chaque valeur : poids 1
+         200       := 2,     // poids 2
+         [300:304] :/ 1 };   // poids 1 partagé sur 5
+// total 3+2+1 = 6 : P(200) = 2/6, P(300..304) = 1/6
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Tirage}{rnd}
+\begin{code}
+Trans t = new;
+if (!t.randomize())            // 0 si les contraintes
+  $error("échec");             //   sont insolubles
+assert (t.randomize() with {   // contraintes en ligne
+  addr < 'h100;
+  kind == local::kind;         // kind de l'appelant
+});
+void'(t.randomize());          // ignore le résultat
+t.c_align.constraint_mode(0);  // coupe une contrainte
+t.data.rand_mode(0);           // data n'est plus tirée
+t.randomize(addr);             // ne tire que addr
+\end{code}
+\begin{optab}[24mm]
+\V|pre_randomize()|  & appelée juste avant le tirage (allouer un objet \V|rand|) \\
+\V|post_randomize()| & juste après (calculer les champs dérivés)
+\end{optab}
+\begin{tab3}[0mm]{42mm}
+ & \V|$urandom()|               & 32 bits non signé \\
+ & \V|$urandom_range(max, min)| & entre min et max \\
+ & \V|std::randomize(x) with {...}| & hors classe
+\end{tab3}
+\sub{randcase : actions pondérées}
+\begin{code}
+randcase
+  3          : x = 1;          // 3/8
+  1          : x = 2;          // 1/8
+  4*en       : x = 3;          // poids = expression
+endcase
+\end{code}
+\note{La graine change les tirages : \V|vsim -sv_seed random|.}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : couverture, assertions =======================
+\begin{colonne}
+\begin{bloc}{Couverture fonctionnelle}{cov}
+\begin{code}
+covergroup cg_tr @(posedge clk);  // ou sample()
+  cp_addr : coverpoint tr.addr {
+    bins zero    = {0};
+    bins low     = {[1:63], 65};  // 1 bin
+    bins mid[4]  = {[64:127]};    // 4 bins égaux
+    bins val[]   = {200,201,202}; // 1 bin / valeur
+    ignore_bins  ign = {[250:255]};
+    illegal_bins bad = {128};     // erreur si vu
+  }
+  cp_dir : coverpoint tr.dir;     // 1 bin / enum
+  cx     : cross cp_addr, cp_dir;
+endgroup
+cg_tr cg = new;                   // instancier !
+cg.sample();                      // échantillonner
+cg.get_coverage();                // % atteint
+\end{code}
+\sub{Transitions et croisements}
+\begin{code}
+coverpoint state {
+  bins t1   = (IDLE => RUN => DONE); // séquence
+  bins t3   = (RUN [*3]);            // 3 fois de suite
+  bins ts[] = (IDLE, RUN => DONE);   // 2 transitions
+}
+c : cross a, b {
+  bins c1 = binsof(a.low) && binsof(b.zero);
+  ignore_bins c2 = binsof(a) intersect {[100:200]};
+}
+\end{code}
+\sub{sample() avec arguments (dans un monitor)}
+\begin{code}
+covergroup cg_par with function sample(bit p, byte d);
+  cp_p : coverpoint p;
+  cp_d : coverpoint ^d;           // parité des données
+  cross cp_p, cp_d;
+endgroup
+cg_par cgp = new;  cgp.sample(cfg.parity, fr.data);
+\end{code}
+\piege{échantillonner ce qui est \emph{observé} (monitor).}
+\end{bloc}
+
+\begin{bloc}{Assertions (SVA)}{sva}
+\begin{code}
+// immédiate : vérifiée quand elle est exécutée
+assert (a == b) else $error("a=%0d b=%0d", a, b);
+// concurrente : vérifiée à chaque front
+property p_req_gnt;
+  @(posedge clk) disable iff (!rst_n)
+  req |-> ##[1:3] gnt;            // gnt 1 à 3 cycles
+endproperty
+A1: assert property (p_req_gnt) else $error("gnt");
+C1: cover  property (p_req_gnt);  // compte les succès
+assume property (@(posedge clk) !(push && pop));
+sequence s_wr; req ##1 we ##1 !req; endsequence
+bind fifo fifo_chk chk_i (.*);    // greffe dans le DUT
+\end{code}
+\begin{tab3}[0mm]{33mm}
+ & \V/a |-> b/ & b au même cycle que a \\
+ & \V/a |=> b/ & b au cycle suivant (= \V/|-> ##1/) \\
+ & \V|##n  ##[m:n]| & délai de n (m à n) cycles \\
+ & \V|a[*n]  a[*m:n]| & a répété n fois consécutives \\
+ & \V|a[->n]| & n-ième occurrence de a \\
+ & \V|$rose(a) $fell(a)| & front montant / descendant \\
+ & \V|$stable(a) $past(a,n)| & inchangé · valeur n cycles avant \\
+ & \V|$onehot(v) $onehot0(v)| & exactement un 1 · au plus un 1 \\
+ & \V|$isunknown(v)| & v contient x ou z
+\end{tab3}
+\note{\V|assume| : hypothèse sur les entrées (preuve formelle, Jasper).}
+\end{bloc}
+\end{colonne}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                            VERSO : UVM
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\entete{UVM}{verso · architecture, séquences, composants}
+\noindent
+% ======================= colonne 1 : architecture =======================
+\begin{colonne}
+\begin{bloc}{Architecture d'un banc UVM}{uvm}
+\begin{center}
+\begin{tikzpicture}[x=1mm, y=1mm, line width=0.6pt, >={Stealth[length=1.5mm]},
+    cmp/.style={draw=trait, fill=white, minimum width=12.5mm, minimum height=4.4mm,
+                inner sep=0.6mm, font=\ttfamily\bfseries\fontsize{5.4}{6}\selectfont},
+    lbl/.style={font=\ttfamily\fontsize{5}{5.4}\selectfont, inner sep=0.8pt},
+    titre/.style={anchor=north east, inner sep=0.8pt,
+                  font=\ttfamily\bfseries\fontsize{5.4}{6}\selectfont},
+    zone/.style={rounded corners=1mm, line width=0.5pt}]
+  \draw[zone, draw=trait, fill=paper] (0,9.5) rectangle (80,34);
+  \node[titre] at (79.6,34) {test = uvm\_test\_top};
+  \draw[zone, draw=trait, fill=white] (2,11) rectangle (78,28.5);
+  \node[titre] at (77.6,28.5) {env};
+  \draw[zone, draw=cat-uvm, line width=0.8pt] (3.5,12.5) rectangle (55.5,25.5);
+  \node[titre, text=cat-uvm] at (55.1,25.5) {agent};
+  \node[cmp] (sqr) at (11,18) {sequencer};
+  \node[cmp] (drv) at (30,18) {driver};
+  \node[cmp] (mon) at (47,18) {monitor};
+  \node[cmp] (scb) at (68,18) {scoreboard};
+  \node[cmp, draw=cat-rnd, text=cat-rnd] (seq) at (11,31) {séquence};
+  \node[cmp, minimum width=46mm] (if) at (38.5,5.5) {interface (virtual)};
+  \node[cmp, minimum width=30mm, fill=paper] (dut) at (38.5,0) {DUT};
+  \draw[->, cat-rnd] (seq) -- node[lbl, right, pos=0.25] {start()} (sqr);
+  \draw[->] (sqr) -- node[lbl, above] {item} (drv);
+  \draw[->] (drv) -- node[lbl, left, pos=0.62] {vif} (drv |- if.north);
+  \draw[->] (mon |- if.north) -- node[lbl, right, pos=0.38] {vif} (mon);
+  \draw[->] (mon) -- node[lbl, above] {ap} (scb);
+  \foreach \x in {30,47} \draw (\x,3.3) -- (\x,2.2);
+\end{tikzpicture}
+\end{center}
+\begin{optab}[19mm]
+\V|uvm_object|    & items, séquences, config : créés pendant le test, sans parent \\
+\V|uvm_component| & structure fixe : \V|new(name, parent)|, phases, hiérarchie
+\end{optab}
+\end{bloc}
+
+\begin{bloc}{Phases}{uvm}
+\begin{tab3}[27mm]{9mm}
+\V|build_phase|        & func $\downarrow$ & créer les fils, lire la config \\
+\V|connect_phase|      & func $\uparrow$   & relier les ports TLM \\
+\V|end_of_elaboration| & func $\uparrow$   & \V|print_topology()| \\
+\V|run_phase|          & task $\parallel$  & tout le temps simulé \\
+\V|reset| $\cdots$ \V|main| & task         & sous-phases de run \\
+\V|check report| & func $\uparrow$ & vérifier, résumer
+\end{tab3}
+\note{$\downarrow$ du test vers les feuilles · $\uparrow$ l'inverse ·
+$\parallel$ tous les composants en parallèle.}
+\sub{Squelette d'un composant, objections}
+\begin{code}
+class my_test extends uvm_test;
+  `uvm_component_utils(my_test)     // factory
+  function new(string name, uvm_component parent);
+    super.new(name, parent);        // obligatoire
+  endfunction
+  task run_phase(uvm_phase phase);
+    phase.raise_objection(this);    // empêche la fin
+    «stimuli : seq.start(...)»
+    phase.drop_objection(this);     // plus aucune
+  endtask                           //  -> fin du test
+endclass
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Factory, config\_db, rapports}{uvm}
+\begin{code}
+drv = my_drv::type_id::create("drv", this);
+it  = my_item::type_id::create("it");    // objet
+// remplacer un type (dans le test, avant create)
+base_drv::type_id::set_type_override(err_drv::get_type());
+// set(contexte, chemin, clé, valeur) puis get
+uvm_config_db#(int)::set(this, "env.agt*", "n", 4);
+if (!uvm_config_db#(int)::get(this, "", "n", n))
+  `uvm_fatal("CFG", "n absent")
+`uvm_info("ID", $sformatf("x=%h", x), UVM_LOW)
+\end{code}
+\begin{optab}[17mm]
+\V|`uvm_info|    & affiché si sa verbosité $\leq$ \V|+UVM_VERBOSITY| :
+                   \V|UVM_NONE < LOW < MEDIUM < HIGH < FULL| \\
+\V|`uvm_error|   & compté, la simulation continue (\V|`uvm_warning| idem, non bloquant) \\
+\V|`uvm_fatal|   & arrête la simulation
+\end{optab}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 2 : stimulus =======================
+\begin{colonne}
+\begin{bloc}{Transaction : sequence item}{rnd}
+\begin{code}
+class apb_tr extends uvm_sequence_item;
+  rand bit [31:0] addr, data;
+  rand dir_t      dir;             // READ / WRITE
+  `uvm_object_utils_begin(apb_tr)  // enregistre et
+    `uvm_field_int(addr, UVM_ALL_ON | UVM_HEX)
+    `uvm_field_enum(dir_t, dir, UVM_ALL_ON)
+  `uvm_object_utils_end            // print, copy, compare
+  function new(string name = "apb_tr");
+    super.new(name);
+  endfunction
+endclass
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Séquence}{rnd}
+\begin{code}
+class wr_rd_seq extends uvm_sequence #(apb_tr);
+  `uvm_object_utils(wr_rd_seq)
+  rand int unsigned n;
+  constraint c_n { n inside {[1:10]}; }
+  task body();                     // le scénario
+    bit [31:0] a;
+    repeat (n) begin
+      `uvm_do_with(req, { dir == WRITE; })
+      a = req.addr;                // relit la même
+      `uvm_do_with(req, { dir == READ;
+                          addr == local::a; })
+    end
+  endtask
+endclass
+\end{code}
+\note{\V|`uvm_do(x)| : crée, randomise, envoie l'item ou lance la sous-séquence x
+(\V|start_item| + \V|randomize| + \V|finish_item|). \V|new| : comme l'item.}
+\sub{Lancer une séquence (test)}
+\begin{code}
+seq = wr_rd_seq::type_id::create("seq");
+void'(seq.randomize());
+seq.start(env.agt.sqr);            // dans run_phase
+// ou séquence par défaut d'une phase :
+uvm_config_db#(uvm_object_wrapper)::set(this,
+  "env.agt.sqr.run_phase", "default_sequence",
+  wr_rd_seq::type_id::get());
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Driver}{rnd}
+\begin{code}
+class apb_drv extends uvm_driver #(apb_tr);
+  `uvm_component_utils(apb_drv)
+  virtual apb_if vif;              // accès aux signaux
+  «new + build_phase : get de vif (config_db)»
+  task run_phase(uvm_phase phase);
+    forever begin
+      seq_item_port.get_next_item(req);  // bloquant
+      drive(req);
+      seq_item_port.item_done();         // item suivant
+    end
+  endtask
+  task drive(apb_tr t);            // protocole APB, <=
+    @(posedge vif.PCLK) vif.PSEL <= 1;  «PADDR...»
+    @(posedge vif.PCLK) vif.PENABLE <= 1;
+    do @(posedge vif.PCLK); while (!vif.PREADY);
+    vif.PSEL <= 0;  vif.PENABLE <= 0;
+  endtask
+endclass
+\end{code}
+\end{bloc}
+\end{colonne}\colbreak
+% ======================= colonne 3 : observation, assemblage =======================
+\begin{colonne}
+\begin{bloc}{Monitor}{sva}
+\begin{code}
+class apb_mon extends uvm_monitor;
+  `uvm_component_utils(apb_mon)
+  virtual apb_if vif;
+  uvm_analysis_port #(apb_tr) ap;  // new() en build
+  task run_phase(uvm_phase phase);
+    apb_tr t;
+    forever begin
+      @(posedge vif.PCLK iff vif.PENABLE && vif.PREADY);
+      t = apb_tr::type_id::create("t");
+      t.addr = vif.PADDR;  «...»
+      ap.write(t);                 // à tous les abonnés
+    end
+  endtask
+endclass
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Scoreboard}{sva}
+\begin{code}
+`uvm_analysis_imp_decl(_apb)   // crée les classes
+`uvm_analysis_imp_decl(_uart)  // uvm_analysis_imp_apb...
+class my_scbd extends uvm_scoreboard;
+  `uvm_component_utils(my_scbd)
+  uvm_analysis_imp_apb  #(apb_tr,  my_scbd) apb_imp;
+  uvm_analysis_imp_uart #(uart_fr, my_scbd) uart_imp;
+  byte exp_q[$];                     // attendus (file)
+  «new : super.new() puis apb_imp = new("apb_imp", this)»
+  function void write_apb(apb_tr t);   // entrée
+    if (t.dir == WRITE) exp_q.push_back(t.data);
+  endfunction
+  function void write_uart(uart_fr f); // sortie
+    byte e = exp_q.pop_front();
+    if (f.data != e) `uvm_error("SCBD", "écart")
+  endfunction
+endclass
+\end{code}
+\end{bloc}
+
+\begin{bloc}{Assemblage : agent, env, top}{uvm}
+\begin{code}
+// agent.build_phase
+mon = apb_mon::type_id::create("mon", this);
+if (get_is_active() == UVM_ACTIVE) begin
+  sqr = apb_sqr::type_id::create("sqr", this);
+  drv = apb_drv::type_id::create("drv", this);
+end
+// agent.connect_phase
+drv.seq_item_port.connect(sqr.seq_item_export);
+// env.connect_phase : monitors -> scoreboard
+apb_agt.mon.ap.connect(scbd.apb_imp);
+\end{code}
+\sub{Module top}
+\begin{code}
+`include "uvm_macros.svh"
+module tb_top;
+  import uvm_pkg::*;  import my_pkg::*;
+  logic clk = 0;  always #5 clk = ~clk;
+  apb_if vif0 (clk);                // interface
+  dut u_dut (.PCLK(clk), .PADDR(vif0.PADDR), «...»);
+  initial begin
+    uvm_config_db#(virtual apb_if)::set(null,
+      "uvm_test_top.*", "vif", vif0);
+    run_test();                     // +UVM_TESTNAME
+  end
+endmodule
+\end{code}
+\note{\V|vsim tb_top +UVM_TESTNAME=my_test -sv_seed random|}
+\end{bloc}
+\end{colonne}
+\end{document}
