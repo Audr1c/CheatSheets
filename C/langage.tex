@@ -1,0 +1,18 @@
+% --- Langage C pour listings ---
+% Classes de mots-clés : [1] rose · [2] cyan · [3] vert · [4] couleur du thème
+% (styles dans ../librairie/fiche.sty). Chargé par c_cheat.tex.
+\lstdefinelanguage{CODE}{
+  sensitive=true, alsoletter={\#},
+  morekeywords=[1]{if,else,for,while,do,return,break,continue,switch,case,default,
+    goto,sizeof,struct,union,enum,typedef,static,extern,const,volatile,inline,
+    register,auto,restrict},
+  morekeywords=[2]{int,float,double,char,void,short,long,signed,unsigned,bool,_Bool,
+    size_t,ptrdiff_t,int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t,int64_t,
+    uint64_t,FILE,node_t,binop_t},
+  morekeywords=[3]{printf,scanf,fprintf,fscanf,snprintf,puts,putchar,getchar,fopen,
+    fclose,fgets,fputs,fread,fwrite,perror,malloc,calloc,realloc,free,exit,qsort,
+    strlen,strcpy,strncpy,strcmp,strcat,memcpy,memset,NULL,EOF,stdin,stdout,stderr,
+    \#include,\#define,\#ifdef,\#ifndef,\#if,\#else,\#endif,\#undef,\#pragma,
+    __FILE__,__LINE__,__func__,__VA_ARGS__},
+  morecomment=[l]{//}, morecomment=[s]{/*}{*/}, morestring=[b]", morestring=[b]',
+}

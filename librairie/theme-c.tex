@@ -1,0 +1,21 @@
+% Thème C / C++ : barre de terminal bleu Solarized, catégories génériques.
+% Utilisé par C/c_cheat.tex et Cpp/cpp_cheat.tex.
+
+% catégories (liseré de l'onglet, sous-titres)
+\colorlet{cat-syn}{mk-pink}      % syntaxe, opérateurs
+\colorlet{cat-typ}{mk-cyan}      % types, données
+\colorlet{cat-ctl}{mk-purple}    % contrôle, fonctions
+\colorlet{cat-ex}{mk-orange}     % exemples, motifs typiques
+\colorlet{cat-io}{mk-green}      % E/S, outils, tests
+\colorlet{cat-lib}{mk-yellow}    % bibliothèque, structures de données
+\colorlet{cat}{cat-syn}
+
+% barre d'en-tête
+\definecolor{sol-blue}{HTML}{1F78B8}   % bleu Solarized (268BD2) assombri pour l'impression
+\definecolor{sol-dark}{HTML}{073642}   % base02
+\colorlet{barre-fond}{sol-blue}
+\colorlet{barre-bord}{sol-dark}
+\colorlet{barre-sep}{white!70!sol-blue}
+\renewcommand\iconebarre{F120}         % invite de terminal
+\renewcommand\tailleiconebarre{11}
+\let\entete\entetecouleur
