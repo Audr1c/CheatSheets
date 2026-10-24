@@ -1,32 +1,50 @@
-% Librairie des fiches pratiques : « éditeur de code », palette Monokai Pro Light (assombrie
-% pour l'impression), contrastes forts (cadres sombres, titres gras). Police Hurmit Nerd Font.
-% A4 paysage, 3 colonnes justifiées par page.
+% Librairie des fiches pratiques — VERSION 2.1 (issue des audits du 2026-10-24).
 %
-% Tout ce qui est commun à toutes les fiches est ici (police, page, couleurs, code, barre
-% d'en-tête, encadrés, tableaux, colonnes, espacements) : une modification ici change
-% toutes les fiches. Ce qui est propre à une fiche (couleur et icône de la barre, légende,
-% catégories, macros visuelles particulières) est dans librairie/theme-<nom>.tex.
+% v2 (audit/SYNTHESE.md, corrections L1 à L8) :
+%   L1  identité de colonne : colonne[titre][couleur] → étiquette numérotée + rail coloré
+%   L2  catégorie visible : onglet rempli de la couleur de catégorie + icône propre (N&B)
+%   L3  hiérarchie : prose en IBM Plex Sans, code et titres en Hurmit ; titres plus gros ;
+%       sous-titres avec repère et filet (lisibles sans couleur)
+%   L4  commentaires et chaînes assombris (contraste ≥ 5:1)
+%   L5  mots-clés seuls en gras : distincts des types et intégrés en N&B
+%   L6  plus de numéros de ligne ; le code a un fond clair qui le sépare de la prose
+%   L8  barre d'en-tête colorée (thème)
+% v2.1 : la mise en page est propre par construction, quel que soit le contenu ajouté :
+%   R1  rythme vertical unique : tout élément (code, tableau, note, piège, sous-titre,
+%       schéma) passe par \fiche@avant / \fiche@apres ; les espaces fusionnent, aucun
+%       espace en haut ni en bas d'un bloc, un sous-titre colle à ce qui le suit
+%   R2  le fond du code est une boîte qui compte sa hauteur : il ne recouvre plus rien ;
+%       une ligne de code trop longue passe à la ligne (↪) au lieu de déborder
+%   R3  tableaux auto-dimensionnés : étiquette et code à leur largeur naturelle (mesurée),
+%       texte dans le reste ; les largeurs données à la main sont ignorées
+%   R4  surimpressions contrôlées : onglet, étiquette de colonne et point du rail sont
+%       mesurés ; collision → le premier bloc descend d'un rang, ou le point est omis,
+%       et un avertissement « [fiche] » est écrit dans le .log
+%   R5  blancs entre blocs plafonnés (\gapmax), le reste va en bas de colonne
+%   R6  prose en fer à gauche (pas de grands blancs entre les mots)
 %
 % Utilisation, depuis le dossier d'une fiche :
 %   \documentclass{article}
-%   \usepackage[<thème>]{../librairie/fiche}    % thèmes : c git python verilog uvm vhdl
-%   \input{langage}                              % \lstdefinelanguage{CODE}{...}
-% Interface pour la fiche :
-%   \entete{titre}{sous-titre} · colonne[branche][couleur] (3 par page) · \colbreak
-%   bloc / blocfin{titre}{catégorie} · code · \V|...| · «...» dans le code = à remplir
-%   \sub · \note · \piege · \badge{TXT} · optab[l1] · tab3[l1]{l2} · typetab
-% Rapport dans le .log :  [fiche] colonne N : libre X mm  (négatif = déborde)
-%                         [bloc] titre : hauteur X mm
+%   \usepackage[<thème>]{../librairie/fiche}   % thèmes : c cpp git python verilog uvm vhdl
+%   \input{langage}
+% Interface pour la fiche (rien d'autre n'est nécessaire, pas de \vspace ni de tabular) :
+%   \entete{titre}{sous-titre} · colonne[titre][couleur] (3 par page) · \colbreak
+%   bloc{titre}{catégorie} · code · \V|...| · «...» = à remplir
+%   \sub{titre} · \note{texte} · \piege{texte} · \badge{TXT}
+%   optab : étiquette & texte \\       tab3 : étiquette & code & remarque \\
+%   compare : & en-tête A & en-tête B \\ \hline  puis  étiquette & A & B \\
+%   grille{n} : n cellules de code par ligne · typetab · schema[options tikz]
+%   coches{n} : étiquette & n colonnes centrées & remarque \\ (1re ligne = en-têtes, \hline)
+% Contrôle : grep "\[fiche\]" <fiche>.log (place libre, collisions, titres trop longs).
 
-% chargé par un chemin relatif (../librairie/fiche) : on se déclare sous ce nom-là
-\ProvidesPackage{\@currpath\@currname}[2026/10/24 Fiches pratiques]
-\edef\fiche@dir{\@currpath}   % dossier de la librairie, pour charger le thème
-\def\fiche@theme{c}
+\ProvidesPackage{\@currpath\@currname}[2026/10/24 Fiches pratiques v2.1]
+\edef\fiche@dir{\@currpath}
+\def\fiche@theme{cpp}
 \DeclareOption*{\edef\fiche@theme{\CurrentOption}}
 \ProcessOptions\relax
 
 % --- Page et paquets ---
-\RequirePackage[a4paper,landscape,margin=7mm]{geometry}
+\RequirePackage[a4paper,landscape,margin=6mm]{geometry}
 \RequirePackage{fontspec}
 \RequirePackage[table]{xcolor}
 \RequirePackage{array,listings,tikz,varwidth}
@@ -34,186 +52,323 @@
 \RequirePackage[most]{tcolorbox}
 \pagestyle{empty}
 \setlength\parindent{0pt}
+\frenchspacing
 
-% --- Police ---
-\setmainfont{Hurmit Nerd Font}[Ligatures=TeXOff]   % ' reste droit (pas de ’ dans Hurmit)
+% --- Polices ---
+% prose : IBM Plex Sans (proportionnelle, grande hauteur d'x, lisible petit)
+% code et titres : Hurmit Nerd Font (identité « éditeur de code » de la v1)
+\setmainfont{IBMPlexSans}[Extension=.otf, UprightFont=*-Regular, BoldFont=*-SemiBold,
+  ItalicFont=*-Italic, BoldItalicFont=*-SemiBoldItalic]
 \setmonofont{Hurmit Nerd Font Mono}
 \newfontfamily\iconfont{Hurmit Nerd Font}
-\newcommand\icone[1]{{\iconfont\symbol{"#1}}}   % glyphe Nerd Font par code hexa
-\newcommand\fontbloc{\fontsize{6.95}{8.3}\selectfont}                 % texte des blocs
-\newcommand\fontonglet{\bfseries\fontsize{7.4}{8.4}\selectfont}       % titre des blocs
-\newcommand\fontcode{\ttfamily\fontsize{6.55}{7.75}\selectfont}       % listings
-\newcommand\fontcodeligne{\ttfamily\fontsize{6.75}{7.9}\selectfont}   % \V|...|
-\newcommand\fontnumero{\ttfamily\fontsize{4.7}{7.75}\selectfont}      % numéros de ligne
-\newcommand\fonttitre{\bfseries\fontsize{12}{12}\selectfont}          % titre de la barre
-\newcommand\fontsoustitre{\fontsize{7}{7}\selectfont}                 % sous-titre de la barre
-\newcommand\fontlegende{\fontsize{6.6}{6.6}\selectfont}               % légende de la barre
+\newfontfamily\titrefont{Hurmit Nerd Font}
+\newcommand\icone[1]{{\iconfont\symbol{"#1}}}
+\newcommand\fontbloc{\fontsize{7.2}{8.4}\selectfont}                   % prose des blocs
+\newcommand\fontonglet{\titrefont\bfseries\fontsize{8.2}{9}\selectfont} % titre des blocs
+\newcommand\fontsub{\bfseries\fontsize{7.2}{8.4}\selectfont}           % sous-titres
+\newcommand\fontcode{\ttfamily\fontsize{6.6}{7.5}\selectfont}         % listings
+\newcommand\fontcodeligne{\ttfamily\fontsize{6.75}{7.9}\selectfont}    % \V|...|
+\newcommand\fonttitre{\titrefont\bfseries\fontsize{13}{13}\selectfont} % titre de la barre
+\newcommand\fontsoustitre{\fontsize{7.5}{7.5}\selectfont}              % sous-titre de la barre
+\newcommand\fontlegende{\fontsize{6.6}{6.6}\selectfont}                % légende de la barre
+\newcommand\fontcolonne{\titrefont\bfseries\fontsize{6.6}{6.6}\selectfont} % titre de colonne
 \newcommand\fontbadge{\ttfamily\bfseries\fontsize{4.8}{4.8}\selectfont}
 
-% --- Couleurs (Monokai Pro Light) ---
+% --- Couleurs (Monokai Pro Light, assombrie pour l'impression) ---
 \definecolor{ink}{HTML}{29242A}       % texte
 \definecolor{trait}{HTML}{3B3539}     % cadres
-\definecolor{paper}{HTML}{F4EFED}     % fond des onglets et de la barre
+\definecolor{paper}{HTML}{F4EFED}     % fond des barres
+\definecolor{codebg}{HTML}{F5F1EF}    % fond du code
 \definecolor{mk-pink}{HTML}{E14775}
 \definecolor{mk-orange}{HTML}{E16032}
 \definecolor{mk-yellow}{HTML}{C47208}
 \definecolor{mk-green}{HTML}{218C5D}
 \definecolor{mk-cyan}{HTML}{1A7F99}
 \definecolor{mk-purple}{HTML}{6A51B8}
-\definecolor{mk-grey}{HTML}{857F81}   % commentaires
-\definecolor{gutter}{HTML}{B5AEB0}    % numéros de ligne
-% catégories (liseré de l'onglet, sous-titres) : définies par le thème, \colorlet{cat-xxx}{..}
+\definecolor{mk-grey}{HTML}{6B6567}   % commentaires (v1 : 857F81, 3,9:1 → 5,7:1)
+\definecolor{mk-string}{HTML}{A35E00} % chaînes (v1 : mk-yellow, 3,6:1 → 5,1:1)
+\definecolor{gutter}{HTML}{B5AEB0}
 \colorlet{cat}{ink}
+\colorlet{note}{ink!78}               % remarques (7,4:1)
+
+% --- Dimensions et espacements (toutes les distances de la fiche sont ici) ---
+\newlength\barreh   \setlength\barreh{8.5mm}   % barre d'en-tête
+\newlength\barregap \setlength\barregap{1.5mm} % sous la barre
+\newlength\colh     \setlength\colh{\dimexpr\textheight-\barreh-\barregap-0.3mm\relax}
+\newlength\colsep   \setlength\colsep{4mm}     % entre deux colonnes
+\newlength\colw     \setlength\colw{\dimexpr(\textwidth-2\colsep)/3\relax}
+\newlength\tabh     \setlength\tabh{4.6mm}     % onglet des blocs
+\newlength\gapbloc  \setlength\gapbloc{\dimexpr\tabh+1.5mm\relax} % entre deux blocs (minimum)
+\newlength\gapmax   \setlength\gapmax{4.5mm}   % étirement maximal d'un écart entre blocs
+\newlength\railx    \setlength\railx{4mm}      % rail de colonne : distance au bord droit
+\newlength\elemsep  \setlength\elemsep{2.6pt}  % entre deux éléments d'un bloc
+\newlength\subsep   \setlength\subsep{4.2pt}     % avant un sous-titre
+\newlength\codepad  \setlength\codepad{0.6mm}  % marge intérieure du fond de code
+
+% --- R1 : rythme vertical ---
+% \fiche@avant[espace] ouvre un élément, \fiche@apres le ferme. \addvspace fusionne les
+% espaces voisins (on garde le plus grand). « coller » supprime l'espace devant l'élément
+% suivant : en haut d'un bloc et après un sous-titre. Un paragraphe de prose qui suit
+% annule l'effet (\everypar).
+\newif\iffiche@colle
+\newcommand\fiche@coller{\global\fiche@colletrue
+  \everypar{\global\fiche@collefalse\everypar{}}}
+\newcommand\fiche@avant[1][\elemsep]{\par
+  \iffiche@colle\global\fiche@collefalse\everypar{}\else\addvspace{#1}\fi}
+\newcommand\fiche@apres{\par\addvspace{\elemsep}}
+\newcommand\fiche@finbloc{\par\unskip}
 
 % --- Code ---
-% classes de mots-clés du langage CODE : [1] mots-clés · [2] types · [3] intégrés · [4] au choix
+% [1] mots-clés : seuls en gras · [2] types · [3] intégrés · [4] au choix du thème
 \colorlet{code-kw4}{mk-orange}
 \lstdefinestyle{base}{language=CODE,
   basicstyle=\fontcode\color{ink},
   keywordstyle=[1]\color{mk-pink}\bfseries,
-  keywordstyle=[2]\color{mk-cyan}\bfseries,
-  keywordstyle=[3]\color{mk-green}\bfseries,
+  keywordstyle=[2]\color{mk-cyan},
+  keywordstyle=[3]\color{mk-green},
   keywordstyle=[4]\color{code-kw4}\bfseries,
   commentstyle=\color{mk-grey}\itshape,
-  stringstyle=\color{mk-yellow},
+  stringstyle=\color{mk-string},
   moredelim=[is][\color{mk-purple}\itshape]{«}{»},
   columns=fullflexible, keepspaces=true, showstringspaces=false, upquote=true}
-\lstdefinestyle{code}{style=base, aboveskip=1.5pt, belowskip=1.5pt,
-  numbers=left, numberstyle=\color{gutter}\fontnumero,
-  numbersep=2mm, xleftmargin=3.4mm}
+\lstdefinestyle{code}{style=base, aboveskip=0pt, belowskip=0pt,
+  breaklines=true, breakatwhitespace=true, breakindent=1.2em,
+  postbreak=\mbox{\textcolor{gutter}{\icone{F149}}\space}}
 \lstdefinestyle{inl}{style=base, basicstyle=\fontcodeligne\color{ink}}
-\lstnewenvironment{code}{\lstset{style=code}}{}
+% R2 : le fond est une boîte (tcolorbox) : sa hauteur compte, il ne déborde jamais
+\newtcblisting{code}{listing only, listing engine=listings, listing options={style=code},
+  colback=codebg, colframe=codebg, boxrule=0pt, sharp corners, boxsep=0pt,
+  left=1.2mm, right=0.8mm, top=\codepad, bottom=\codepad,
+  before={\fiche@avant\noindent}, after={\fiche@apres}}
 \newcommand\V{\lstinline[style=inl]}
 
-% --- Dimensions et espacements ---
-\newlength\barreh  \setlength\barreh{8mm}      % hauteur de la barre d'en-tête
-\newlength\barregap \setlength\barregap{1.5mm} % espace sous la barre
-\newlength\colh   \setlength\colh{\dimexpr\textheight-\barreh-\barregap-0.3mm\relax}
-\newlength\colsep \setlength\colsep{4mm}       % entre deux colonnes
-\newlength\colw   \setlength\colw{\dimexpr(\textwidth-2\colsep)/3\relax}
-\newlength\tabh   \setlength\tabh{4.4mm}       % hauteur de l'onglet des blocs
-\newlength\gapbloc \setlength\gapbloc{\dimexpr\tabh+2.2mm\relax}  % espace minimal entre deux blocs
-
 % --- Barre d'en-tête ---
-% Le thème choisit le modèle (\entete = \entetecouleur ou \entetefenetre) et le règle :
-%   couleurs barre-fond, barre-bord, barre-icone, barre-sep · \iconebarre{code hexa}
-%   \tailleiconebarre · \legende{...} · \decorbarre (TikZ en plus, nœuds titre, sous, leg)
 \colorlet{barre-fond}{paper}
 \colorlet{barre-bord}{trait}
 \colorlet{barre-icone}{white}
 \colorlet{barre-sep}{gutter}
-\newcommand\iconebarre{}            % vide = pas d'icône
-\newcommand\tailleiconebarre{11}
+\newcommand\iconebarre{}
+\newcommand\tailleiconebarre{12}
 \newcommand\decorbarre{}
-\newlength\barrey  \setlength\barrey{0.5\barreh}  % hauteur de la ligne de texte
-\newcommand\leg[2]{{\ttfamily\bfseries\color{#1}#2}}            % entrée de légende
-\newcommand\legit[2]{{\ttfamily\itshape\color{#1}#2}}           % entrée de légende, italique
-\newcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{intégré} \
+\newlength\barrey  \setlength\barrey{0.5\barreh}
+\newcommand\leg[2]{{\ttfamily\bfseries\color{#1}#2}}
+\newcommand\legit[2]{{\ttfamily\itshape\color{#1}#2}}
+\newcommand\legn[2]{{\ttfamily\color{#1}#2}}
+\newcommand\legende{\leg{mk-pink}{mot-clé} \ \legn{mk-cyan}{type} \ \legn{mk-green}{intégré} \
   \legit{mk-grey}{// commentaire} \ \legit{mk-purple}{«à remplir»}}
-\newcommand\fiche@cadrebarre{%
-  \draw[barre-bord,fill=barre-fond,line width=0.8pt,rounded corners=1.8mm]
-    (0.4pt,0.4pt) rectangle (\linewidth-0.4pt,\barreh-0.4pt);}
-\newcommand\fiche@finbarre{\par\vspace{\barregap}\nointerlineskip}
-% modèle « barre colorée » : icône + titre blancs, légende dans une pastille blanche à droite
-\newcommand\entetecouleur[2]{%
+\newsavebox\fiche@boite
+\newcommand\fiche@titrebarre[1]{%
+  \if\relax\detokenize\expandafter{\iconebarre}\relax\else
+    {\color{barre-icone}\fontsize{\tailleiconebarre}{\tailleiconebarre}\selectfont
+     \icone{\iconebarre}}\hspace{2mm}\fi
+  \fonttitre #1}
+\newcommand\entete[2]{%
+  % R4 : titre + sous-titre et légende ne doivent pas se toucher
+  \sbox\fiche@boite{\fiche@titrebarre{#1}\hspace{5mm}{\fontsoustitre{\iconfont│}\quad #2}}%
+  \dimen@=\wd\fiche@boite
+  \sbox\fiche@boite{\fontlegende\legende}%
+  \advance\dimen@ by \dimexpr\wd\fiche@boite+4mm+4mm+1.8mm+6mm\relax
+  \ifdim\dimen@>\linewidth
+    \PackageWarningNoLine{fiche}{En-tête : sous-titre et légende se chevauchent
+      (\fpeval{round((\the\dimexpr\dimen@-\linewidth\relax)/1mm,1)} mm de trop)}%
+    \typeout{[fiche] collision : en-tête « #2 »}%
+  \fi
   \noindent\begin{tikzpicture}
-    \fiche@cadrebarre
-    \node[anchor=west,inner sep=0pt,text=white] (titre) at (4mm,\barrey)
-      {\if\relax\detokenize\expandafter{\iconebarre}\relax\else
-         {\color{barre-icone}\fontsize{\tailleiconebarre}{\tailleiconebarre}\selectfont
-          \icone{\iconebarre}}\hspace{1.8mm}\fi
-       \fonttitre #1};
+    \draw[barre-bord,fill=barre-fond,line width=0.8pt,rounded corners=1.8mm]
+      (0.4pt,0.4pt) rectangle (\linewidth-0.4pt,\barreh-0.4pt);
+    \node[anchor=west,inner sep=0pt,text=white] (titre) at (4mm,\barrey) {\fiche@titrebarre{#1}};
     \node[anchor=west,inner sep=0pt,text=white,font=\fontsoustitre] (sous) at ([xshift=5mm]titre.east)
-      {\textcolor{barre-sep}{│}\quad #2};
+      {\textcolor{barre-sep}{\iconfont│}\quad #2};
     \node[anchor=east,fill=white,draw=barre-bord,line width=0.6pt,rounded corners=1.2mm,
-          inner xsep=2mm,inner ysep=1.1mm,font=\fontlegende] (leg) at (\linewidth-1.6mm,\barrey)
+          inner xsep=2mm,inner ysep=1.1mm,font=\fontlegende] (leg) at (\linewidth-1.8mm,\barrey)
       {\legende};
     \decorbarre
-  \end{tikzpicture}\fiche@finbarre}
-% modèle « fenêtre » : fond clair, trois pastilles, sous-titre et légende à droite
-\newcommand\entetefenetre[2]{%
-  \noindent\begin{tikzpicture}
-    \fiche@cadrebarre
-    \foreach \c/\x in {mk-pink/4, mk-yellow/8, mk-green/12}
-      \fill[\c] (\x mm,\barrey) circle (1.4mm);
-    \node[anchor=west,inner sep=0pt,text=ink] (titre) at (17mm,\barrey) {\fonttitre #1};
-    \node[anchor=east,inner sep=0pt,font=\fontlegende,text=ink] (leg) at (\linewidth-4mm,\barrey)
-      {#2 \quad\textcolor{barre-sep}{│}\quad \legende};
-    \decorbarre
-  \end{tikzpicture}\fiche@finbarre}
-\let\entete\entetecouleur
+  \end{tikzpicture}\par\vspace{\barregap}\nointerlineskip}
 
-% --- Encadrés : onglet de fichier posé sur un cadre sombre ---
-% L'onglet est dessiné au-dessus du cadre (overlay) : il ne prend pas de place,
-% l'espace est réservé par \tabh (en haut de colonne) et \gapbloc (entre les blocs).
-% Réglages du thème : \iconebloc{cat} (icône de l'onglet) · \stylebloc (ajouté à la police)
-%   · \decorbloc (TikZ en plus dans l'overlay, nœuds frame et onglet)
-\newcommand\iconebloc[1]{\icone{F1C9}}
-\newcommand\stylebloc{}
-\newcommand\decorbloc{}
-\newlength\colused   % hauteur déjà occupée dans la colonne courante
+% --- Encadrés ---
+% Onglet rempli de la couleur de catégorie, icône de la catégorie (\iconecat dans le thème),
+% un point du rail sur le bord haut. R4 : l'onglet est mesuré avant d'être posé.
+\newcommand\iconecat[2]{\expandafter\def\csname fiche@ic@#1\endcsname{#2}}
+\newcommand\iconebloc[1]{\icone{\ifcsname fiche@ic@#1\endcsname\csname fiche@ic@#1\endcsname\else F1C9\fi}}
+\newcommand\fiche@onglet[2]{\iconebloc{#2}\hspace{2.2mm}#1}   % contenu de l'onglet
+\newlength\fiche@ongletw     % largeur de l'onglet du bloc courant
+\newlength\fiche@labelw      % largeur de l'étiquette de la colonne courante
+\newif\iffiche@point         % dessiner le point du rail sur ce bloc ?
+\newif\iffiche@premier       % premier bloc de la colonne ?
+\newlength\colused           % hauteur occupée dans la colonne courante
+\newcounter{blocs}           % blocs dans la colonne courante
 \newsavebox\blocsave
 \newtcolorbox{blocbox}[3][]{enhanced, sharp corners, colback=white, colframe=trait,
-  boxrule=0.8pt, left=1.5mm, right=1.5mm, top=1mm, bottom=1mm,
+  boxrule=0.8pt, left=1.6mm, right=1.6mm, top=1.1mm, bottom=1.1mm,
   before skip=0pt, after skip=0pt,
-  before upper={\colorlet{cat}{cat-#3}},
-  fontupper=\fontbloc\color{ink}\stylebloc,
-  overlay={\node[anchor=south west, draw=trait, fill=paper, line width=0.8pt,
-      minimum height=\tabh, inner xsep=1.6mm, inner ysep=0pt, text=ink,
-      text height=1.9mm, text depth=0.55mm, font=\fontonglet]
-      (onglet) at ([yshift=-0.4pt]frame.north west) {\iconebloc{#3}\enspace#2};
-    \fill[cat-#3] ([xshift=0.4pt,yshift=-0.4pt]onglet.north west)
-                  rectangle ([xshift=-0.4pt,yshift=-1.9pt]onglet.north east);
-    \decorbloc},
+  % R6 : vrai fer à gauche (plus 1fil) : les espaces entre les mots ne s'étirent jamais,
+  % même quand un long \V|...| ne tient pas en fin de ligne
+  before upper={\colorlet{cat}{cat-#3}\rightskip=0pt plus 1fil\relax\fiche@coller},
+  after upper={\fiche@finbloc},
+  fontupper=\fontbloc\color{ink},
+  overlay={\node[anchor=south west, draw=trait, fill=cat-#3!88!black, line width=0.8pt,
+      minimum height=\tabh, inner xsep=1.8mm, inner ysep=0pt, text=white,
+      text height=2.3mm, text depth=0.7mm, font=\fontonglet]
+      (onglet) at ([yshift=-0.4pt]frame.north west) {\fiche@onglet{#2}{#3}};
+    \iffiche@point
+      \filldraw[fill=white,draw=rail,line width=1.3pt] ([xshift=-\railx]frame.north east) circle (1.2mm);
+    \fi},
   #1}
-% Colonnes « justifiées » : chaque bloc garde sa taille naturelle, le premier est en haut,
-% le dernier en bas, et les espaces entre blocs s'étirent tous de la même façon.
-\NewDocumentEnvironment{bloc}{mm}{\begin{lrbox}{\blocsave}\begin{blocbox}{#1}{#2}}{%
+\NewDocumentEnvironment{bloc}{mm}{%
+  % R4 : mesurer l'onglet, éviter l'étiquette de colonne et le point du rail
+  \sbox\fiche@boite{\fontonglet\fiche@onglet{#1}{#2}}%
+  \setlength\fiche@ongletw{\dimexpr\wd\fiche@boite+3.6mm\relax}%
+  \iffiche@premier\global\fiche@premierfalse
+    \ifdim\fiche@labelw>\z@
+      \ifdim\dimexpr\fiche@ongletw+\fiche@labelw+\railx+5mm\relax>\colw
+        \vspace*{\tabh}\global\advance\colused by \tabh
+        \typeout{[fiche] collision : colonne \thecol, onglet « #1 » et étiquette
+          -> le bloc descend d'un rang}%
+      \fi
+    \fi
+  \fi
+  \ifdim\dimexpr\fiche@ongletw+\railx+2mm\relax>\colw
+    \global\fiche@pointfalse
+    \PackageWarningNoLine{fiche}{Titre de bloc trop long : « #1 »}%
+    \typeout{[fiche] collision : onglet « #1 » trop long, point du rail omis}%
+  \else\global\fiche@pointtrue\fi
+  \begin{lrbox}{\blocsave}\begin{blocbox}{#1}{#2}}{%
   \end{blocbox}\end{lrbox}%
+  \stepcounter{blocs}%
   \global\advance\colused by \dimexpr\ht\blocsave+\dp\blocsave+\gapbloc\relax
   \typeout{[bloc] \unexpanded{#1} : \fpeval{round((\the\dimexpr\ht\blocsave+\dp\blocsave\relax)/1mm,1)} mm}%
   \par\nointerlineskip\noindent\usebox\blocsave\par
-  \vskip\dimexpr\gapbloc\relax plus 1fill}
-\NewDocumentEnvironment{blocfin}{mm}{\begin{bloc}{#1}{#2}}{\end{bloc}}  % ancien nom, identique
+  \vskip\dimexpr\gapbloc\relax plus 1fil}
+\NewDocumentEnvironment{blocfin}{mm}{\begin{bloc}{#1}{#2}}{\end{bloc}}
 
-\newcommand\sub[1]{\par\vspace{2pt}{\ttfamily\bfseries\color{cat}// #1}\par\vspace{0.5pt}}
-\newcommand\note{\textcolor{ink!68}}
-\newcommand\piege[1]{\par\vspace{2pt}{\color{mk-orange}\icone{F071}\ \bfseries warning:}\ #1}
-% petit badge encadré, ex. \badge{SV}, \badge{C++17}, \badge{v3.10}
+% --- Éléments d'un bloc (tous passent par R1) ---
+% sous-titre : carré + texte gras de la couleur de catégorie + filet jusqu'au bord
+\newcommand\sub[1]{\fiche@avant[\subsep]\noindent
+  {\color{cat}\rule[0.15ex]{1.5mm}{1.5mm}}\hspace{1.2mm}{\fontsub\color{cat}#1}%
+  \hspace{1.5mm}{\color{cat!45}\leaders\hrule height 0.5pt depth 0pt\hfill}\par
+  \nobreak\vspace{1.4pt}\fiche@coller}
+\newcommand\note[1]{\fiche@avant{\color{note}#1\par}\fiche@apres}
+\newcommand\piege[1]{\fiche@avant
+  {\color{mk-orange!85!black}\icone{F071}\ \bfseries Piège :}\ #1\par\fiche@apres}
 \newcommand\badge[1]{\tikz[baseline=(s.base)]\node[draw=mk-cyan,text=mk-cyan,rounded corners=1pt,
   line width=0.5pt,inner xsep=1pt,inner ysep=0.6pt,font=\fontbadge](s){#1};}
+% schéma TikZ centré : \begin{schema}[options] ... \end{schema}
+\NewDocumentEnvironment{schema}{O{}}{\fiche@avant\centering\begin{tikzpicture}[#1]}%
+  {\end{tikzpicture}\par\fiche@apres}
 
-% --- Tableaux (colonnes alignées) ---
-\newcommand\tabsetup{\arrayrulecolor{black!14}\renewcommand\arraystretch{1.1}}
-% optab[l1] : étiquette | contenu
-\newenvironment{optab}[1][15mm]{\par\tabsetup
-  \begin{tabular}{@{}>{\raggedright\arraybackslash\bfseries}p{#1}@{\hspace{1.5mm}}%
-                     >{\raggedright\arraybackslash}p{\dimexpr\linewidth-#1-1.5mm}@{}}}%
-  {\end{tabular}\par}
-% tab3[l1]{l2} : étiquette | code | remarque
-\newenvironment{tab3}[2][15mm]{\par\tabsetup
-  \begin{tabular}{@{}>{\raggedright\arraybackslash\bfseries}p{#1}@{\hspace{1.5mm}}%
-                     >{\raggedright\arraybackslash}p{#2}@{\hspace{1.5mm}}%
-                     >{\raggedright\arraybackslash\leavevmode\color{ink!72}}p{\dimexpr\linewidth-#1-#2-3mm}@{}}}%
-  {\end{tabular}\par}
+% --- Tableaux (R3 : largeurs naturelles, texte dans le reste) ---
+% Le corps est recopié tel quel dans \jobname.tab, puis lu deux fois : un tableau d'essai
+% invisible mesure la largeur naturelle des colonnes étiquette et code (cellules mises en
+% boîte), le tableau final donne le reste de la ligne à la colonne de texte. Le corps
+% n'est jamais un argument de macro : \V|...| y garde tous ses caractères (& % | ...).
+\newcommand\tabsetup{\arrayrulecolor{black!18}\renewcommand\arraystretch{1.06}}
+\newlength\tabgap  \setlength\tabgap{2mm}    % entre deux colonnes de tableau
+\newlength\tabmin  \setlength\tabmin{14mm}   % largeur minimale de la colonne de texte
+\newlength\tablabel \setlength\tablabel{16mm} % largeur minimale des étiquettes : les tableaux
+                                              % d'une fiche s'alignent sur cette colonne
+\newlength\tabpuce  \setlength\tabpuce{4mm}   % étiquette plus étroite (· 1 15 ...) : une puce,
+                                              % gardée à sa largeur naturelle
+\newsavebox\fiche@cell
+\newlength\fiche@wa  \newlength\fiche@wb  \newlength\fiche@W  \newlength\fiche@g
+\newcommand\fiche@max[1]{\ifdim\wd\fiche@cell>#1\global#1=\wd\fiche@cell\fi\usebox\fiche@cell}
+\newcolumntype{A}{>{\begin{lrbox}{\fiche@cell}\bfseries}l<{\end{lrbox}\fiche@max\fiche@wa}}
+\newcolumntype{B}{>{\begin{lrbox}{\fiche@cell}}l<{\end{lrbox}\fiche@max\fiche@wb}}
+\newcolumntype{T}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash\leavevmode\color{note}}p{#1}}
+% \relax : la 1re cellule doit commencer avant l'ouverture du fichier, sinon une ligne
+% qui commence par & (étiquette vide) est mal découpée
+\def\fiche@corps{\relax\@@input\jobname.tab }
+\newcommand\fiche@ecrire{\tcbverbatimwrite{\jobname.tab}}
+\newcommand\fiche@mesurer[1]{\global\fiche@wa=\z@\global\fiche@wb=\z@
+  \sbox\fiche@boite{\tabsetup\begin{tabular}{#1}\fiche@corps\end{tabular}}%
+  \ifdim\fiche@wa>\z@
+    \setlength\fiche@g{\tabgap}%
+    \ifdim\fiche@wa>\tabpuce\ifdim\fiche@wa<\tablabel\global\fiche@wa=\tablabel\fi\fi
+  \else\setlength\fiche@g{\z@}\fi}
+% colonne d'étiquettes à la largeur retenue (naturelle, au moins \tablabel)
+\newcolumntype{L}{>{\bfseries\raggedright\arraybackslash}p{\fiche@wa}}
+% reste de la ligne pour le texte ; trop étroit → minimum et avertissement
+\newcommand\fiche@reste[1]{\setlength\fiche@W{#1}%
+  \ifdim\fiche@W<\tabmin
+    \typeout{[fiche] collision : tableau trop large (colonne \thecol), texte réduit à \the\tabmin}%
+    \PackageWarningNoLine{fiche}{Tableau trop large en colonne \thecol}\setlength\fiche@W{\tabmin}\fi}
+\newcommand\fiche@poser[1]{\fiche@avant\tabsetup\noindent
+  \begin{tabular}{#1}\fiche@corps\end{tabular}\par\fiche@apres}
+% La relecture se fait après la fin de l'environnement (\aftergroup) : dans le groupe,
+% les caractères spéciaux sont encore en mode verbatim (& ne séparerait pas les colonnes).
+% Argument optionnel final lu avec !o (ne saute pas la fin de ligne) : sans [..], la ligne
+% suivante n'est pas examinée et le corps reste entièrement verbatim (\V|a_b| en tête compris).
+% optab[ignoré] : étiquette | texte
+\NewDocumentEnvironment{optab}{!o}{\fiche@ecrire}{\endtcbverbatimwrite\aftergroup\fiche@optab}
+\newcommand\fiche@optab{%
+  \fiche@mesurer{@{}A@{}l@{}}%
+  \fiche@reste{\dimexpr\linewidth-\fiche@wa-\fiche@g\relax}%
+  \fiche@poser{@{}L@{\hspace{\fiche@g}}T{\fiche@W}@{}}}
+% tab3[ignoré]{ignoré} : étiquette | code | remarque (étiquettes vides : pas de colonne)
+\NewDocumentEnvironment{tab3}{om}{\fiche@ecrire}{\endtcbverbatimwrite\aftergroup\fiche@tabtrois}
+\newcommand\fiche@tabtrois{%
+  \fiche@mesurer{@{}A@{}B@{}l@{}}%
+  \fiche@reste{\dimexpr\linewidth-\fiche@wa-\fiche@g-\fiche@wb-\tabgap\relax}%
+  \fiche@poser{@{}L@{\hspace{\fiche@g}}l@{\hspace{\tabgap}}R{\fiche@W}@{}}}
+% compare : étiquette | A | B ; 1re ligne = en-têtes, suivie de \hline
+\newenvironment{compare}{\fiche@ecrire}{\endtcbverbatimwrite\aftergroup\fiche@compare}
+\newcommand\fiche@compare{%
+  \fiche@mesurer{@{}A@{}l@{}l@{}}%
+  \fiche@reste{\dimexpr(\linewidth-\fiche@wa-\fiche@g-\tabgap)/2\relax}%
+  \fiche@poser{@{}L@{\hspace{\fiche@g}}T{\fiche@W}@{\hspace{\tabgap}}T{\fiche@W}@{}}}
+% coches{n} : étiquette | n colonnes centrées (coches, valeurs courtes) | remarque ;
+% 1re ligne = en-têtes, suivie de \hline. Les n colonnes ont la même largeur (la plus grande).
+\newenvironment{coches}[1]{\gdef\fiche@n{#1}\fiche@ecrire}{\endtcbverbatimwrite\aftergroup\fiche@coches}
+\newcommand\fiche@coches{%
+  \fiche@mesurer{@{}A@{}*{\fiche@n}{B@{}}l@{}}%
+  \fiche@reste{\dimexpr\linewidth-\fiche@wa-\fiche@g-\fiche@n\dimexpr\fiche@wb+\tabgap\relax\relax}%
+  \fiche@poser{@{}L@{\hspace{\fiche@g}}*{\fiche@n}{>{\centering\arraybackslash}p{\fiche@wb}@{\hspace{\tabgap}}}R{\fiche@W}@{}}}
+% grille{n} : n cellules (code court) par ligne, réparties sur toute la largeur
+\newenvironment{grille}[1]{\fiche@avant\tabsetup\noindent
+  \begin{tabular*}{\linewidth}{@{}*{#1}{l@{\extracolsep{\fill}}}@{}}}%
+  {\end{tabular*}\par\fiche@apres}
 % typetab : type | états | bits | signe | remarque
-\newenvironment{typetab}{\par\tabsetup
+\newenvironment{typetab}{\fiche@avant\tabsetup\noindent
   \begin{tabular}{@{}l@{\hspace{2.5mm}}c@{\hspace{2.5mm}}c@{\hspace{2.5mm}}l@{\hspace{2.5mm}}l@{}}
   \textbf{type} & \textbf{états} & \textbf{bits} & \textbf{signe} & \\\hline}%
-  {\end{tabular}\par}
+  {\end{tabular}\par\fiche@apres}
 
-% --- Colonnes : 3 par page, même hauteur, blocs répartis verticalement ---
-% colonne[a][b] : les deux arguments optionnels sont passés à \debutcolonne{a}{b},
-% que le thème peut redéfinir (ex. Git : nom et couleur de la branche).
-\newcommand\debutcolonne[2]{}
+% --- Colonnes : colonne[titre][couleur] ---
+% Rail vertical de la couleur de la colonne le long du bord droit (visible entre les blocs,
+% un point sur chaque bloc) ; étiquette « N · titre » en haut à droite (1 à 3 au recto,
+% 4 à 6 au verso). Sans titre : rail seul.
+% R5 : chaque écart entre blocs s'étire d'au plus \gapmax ; le reste va en bas de colonne.
+\colorlet{rail}{trait}
 \newcounter{col}
-\NewDocumentEnvironment{colonne}{O{}O{}}{\stepcounter{col}%
-  \begin{minipage}[b][\colh][s]{\colw}\global\colused=\tabh
-  \debutcolonne{#1}{#2}\vspace*{\tabh}}%
-  {\par\unskip\vskip 0pt plus 1fil\kern0pt\rapportcolonne\end{minipage}}  % fil < fill : sert seulement s'il n'y a qu'un bloc
+% texte de l'étiquette (le thème peut le changer, ex. Git : icône de branche + nom)
+\newcommand\etiquettecolonne[1]{\thecol\enspace·\enspace#1}
+\newcommand\fiche@rail[1]{\hbox to 0pt{\begin{tikzpicture}[overlay]
+    \draw[rail, line width=1.3pt] (\colw-\railx,-0.5\tabh) -- (\colw-\railx,-\colh+2mm);
+    \ifx\relax#1\relax\else
+      \node[anchor=east, fill=rail, text=white, rounded corners=1.2pt, inner xsep=1.6pt,
+            inner ysep=0pt, minimum height=3.3mm, text height=1.75mm, text depth=0.5mm,
+            font=\fontcolonne] at (\colw-\railx-2mm,-0.5\tabh)
+        {\etiquettecolonne{#1}};
+    \fi
+  \end{tikzpicture}\hss}\nointerlineskip}
+\NewDocumentEnvironment{colonne}{O{}O{trait}}{\stepcounter{col}\setcounter{blocs}{0}%
+  \ifx\relax#1\relax\global\fiche@labelw=\z@\else
+    \sbox\fiche@boite{\fontcolonne\etiquettecolonne{#1}}%
+    \global\fiche@labelw=\dimexpr\wd\fiche@boite+3.2pt\relax\fi
+  \global\fiche@premiertrue
+  \begin{minipage}[b][\colh][s]{\colw}\colorlet{rail}{#2}\global\colused=\tabh
+  \fiche@rail{#1}\vspace*{\tabh}}%
+  {\par\unskip\fiche@basdecolonne\kern0pt\rapportcolonne\end{minipage}}
+% espace restant après le dernier bloc : k fil tel que chaque écart reçoive au plus \gapmax
+\newcommand\fiche@basdecolonne{%
+  \dimen@=\dimexpr\colh-\colused+\gapbloc\relax   % libre (le dernier écart est retiré)
+  \ifnum\value{blocs}<2 \vskip 0pt plus 1fil\relax
+  \else\ifdim\dimen@>\dimexpr\gapmax*\numexpr\value{blocs}-1\relax\relax
+    \vskip 0pt plus \fpeval{\dimen@/\gapmax - (\value{blocs}-1)}fil\relax
+  \fi\fi}
 \newcommand\colbreak{\hspace{\colsep}}
 \newcommand\rapportcolonne{%
-  \global\advance\colused by -\gapbloc   % pas d'espace après le dernier bloc
+  \global\advance\colused by -\gapbloc
   \typeout{[fiche] colonne \thecol\space : libre
     \fpeval{round((\the\dimexpr\colh-\colused\relax)/1mm,1)} mm}%
   \ifdim\colused>\colh

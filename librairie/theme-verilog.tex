@@ -1,18 +1,30 @@
-% Thème Verilog / SystemVerilog : barre « fenêtre » claire à trois pastilles, badge SV.
+% Thème Verilog / SystemVerilog : barre teal « matériel » avec une puce, badge SV,
+% une icône par catégorie.
 % Utilisé par Verilog/verilog_cheat.tex (et repris par theme-uvm.tex).
 
-% catégories (liseré de l'onglet, sous-titres)
-\colorlet{cat-syn}{mk-pink}      % syntaxe, opérateurs
-\colorlet{cat-typ}{mk-cyan}      % types, données
-\colorlet{cat-ctl}{mk-purple}    % contrôle
-\colorlet{cat-hw}{mk-orange}     % matériel, conception
-\colorlet{cat-tb}{mk-green}      % testbench, simulation
-\colorlet{cat-agg}{mk-yellow}    % agrégats, tableaux
+% catégories (onglet rempli, sous-titres) et leur icône (forme visible en N&B)
+\colorlet{cat-syn}{mk-pink}      \iconecat{syn}{F121}   % syntaxe, opérateurs       </>
+\colorlet{cat-typ}{mk-cyan}      \iconecat{typ}{F1B2}   % types, données            cube
+\colorlet{cat-ctl}{mk-purple}    \iconecat{ctl}{F126}   % contrôle                  embranchement
+\colorlet{cat-hw}{mk-orange}     \iconecat{hw}{F2DB}    % matériel, conception      puce
+\colorlet{cat-tb}{mk-green}      \iconecat{tb}{F0C3}    % testbench, simulation     fiole
+\colorlet{cat-agg}{mk-yellow}    \iconecat{agg}{F00A}   % agrégats, tableaux        grille
 \colorlet{cat}{cat-syn}
 
 \newcommand\sv{\badge{SV}}       % marque « SystemVerilog seulement »
 
+% couleurs des colonnes (rail + étiquette)
+\definecolor{hdl-teal}{HTML}{0F766E}
+\definecolor{hdl-dark}{HTML}{0A4D48}
+\colorlet{col-a}{hdl-teal}
+\colorlet{col-b}{mk-purple}
+\colorlet{col-c}{mk-pink!80!black}
+
 % barre d'en-tête
-\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{\$système} \
+\colorlet{barre-fond}{hdl-teal}
+\colorlet{barre-bord}{hdl-dark}
+\colorlet{barre-sep}{white!65!hdl-teal}
+\renewcommand\iconebarre{F2DB}         % puce
+\renewcommand\tailleiconebarre{13}
+\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \legn{mk-cyan}{type} \ \legn{mk-green}{\$système} \
   \legit{mk-grey}{// commentaire} \ \legit{mk-purple}{«à remplir»} \ \sv}
-\let\entete\entetefenetre

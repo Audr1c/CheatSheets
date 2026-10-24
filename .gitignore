@@ -10,17 +10,19 @@
 *.synctex(busy)
 *.bbl
 *.blg
+# tableaux et listings écrits par la librairie pendant la compilation
+*.tab
+*.listing
 
 # PDF produits par la compilation (make les régénère)
 *.pdf
 # ... sauf les documents sources des fiches
 !UVM/AED_SV_UVM_Cheatsheet_20250919.pdf
 !Verilog/VERILOG-CHEATSHEET-.pdf
-# ... et les fiches de russe, que le Makefile ne compile pas
-!Russe/*.pdf
 
-# Aperçus et brouillons
+# Aperçus et brouillons, rendus de l'audit (régénérés par le skill audit-fiche)
 apercu*.png
+audit/**/*.png
 
 # Éditeurs et système
 .vscode/

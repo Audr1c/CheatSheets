@@ -1,25 +1,36 @@
-% Thème VHDL : barre « fenêtre » claire (sœur de Verilog), catégories génériques,
-% schémas de conversion de types.
+% Thème VHDL : barre verte avec une puce (sœur de Verilog, en teal), une icône par
+% catégorie, schémas de conversion de types.
 % Utilisé par VHDL/vhdl_cheat.tex.
 
-% catégories (liseré de l'onglet, sous-titres)
-\colorlet{cat-syn}{mk-pink}      % syntaxe, opérateurs
-\colorlet{cat-typ}{mk-cyan}      % types, données
-\colorlet{cat-ctl}{mk-purple}    % contrôle, fonctions
-\colorlet{cat-ex}{mk-orange}     % exemples, motifs typiques
-\colorlet{cat-io}{mk-green}      % E/S, outils, tests
-\colorlet{cat-lib}{mk-yellow}    % bibliothèque, paquets
+% catégories (onglet rempli, sous-titres) et leur icône (forme visible en N&B)
+\colorlet{cat-syn}{mk-pink}      \iconecat{syn}{F121}   % syntaxe, opérateurs       </>
+\colorlet{cat-typ}{mk-cyan}      \iconecat{typ}{F1B2}   % types, données            cube
+\colorlet{cat-ctl}{mk-purple}    \iconecat{ctl}{F126}   % contrôle, process         embranchement
+\colorlet{cat-ex}{mk-orange}     \iconecat{ex}{F2DB}    % circuits, motifs typiques puce
+\colorlet{cat-io}{mk-green}      \iconecat{io}{F0C3}    % testbench, simulation     fiole
+\colorlet{cat-lib}{mk-yellow}    \iconecat{lib}{F02D}   % bibliothèques, paquets    livre
 \colorlet{cat}{cat-syn}
 
+% couleurs des colonnes (rail + étiquette)
+\definecolor{vhdl-green}{HTML}{2D6A4F}
+\definecolor{vhdl-dark}{HTML}{1B4332}
+\colorlet{col-a}{vhdl-green}
+\colorlet{col-b}{mk-purple}
+\colorlet{col-c}{mk-cyan!75!black}
+
 % barre d'en-tête
-\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{intégré} \
+\colorlet{barre-fond}{vhdl-green}
+\colorlet{barre-bord}{vhdl-dark}
+\colorlet{barre-sep}{white!65!vhdl-green}
+\renewcommand\iconebarre{F2DB}         % puce
+\renewcommand\tailleiconebarre{13}
+\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \legn{mk-cyan}{type} \ \legn{mk-green}{intégré} \
   \legit{mk-grey}{-{}- commentaire} \ \legit{mk-purple}{«à remplir»}}
-\let\entete\entetefenetre
 
 % schéma des conversions : ty = boîte de type · cv = flèche · fn = nom de fonction
 \tikzset{
   ty/.style={draw=trait, fill=paper, line width=0.8pt, rounded corners=1mm, inner sep=0pt,
-    minimum height=5.2mm, font=\ttfamily\bfseries\fontsize{6.6}{6.6}\selectfont, text=mk-cyan},
+    minimum height=5.2mm, font=\ttfamily\bfseries\fontsize{6.6}{6.6}\selectfont, text=mk-cyan!80!black},
   cv/.style={-{Stealth[length=1.6mm]}, line width=0.8pt, draw=ink!75},
-  fn/.style={font=\ttfamily\fontsize{5.4}{5.4}\selectfont, text=mk-green, inner sep=0.8pt},
+  fn/.style={font=\ttfamily\fontsize{5.9}{6.3}\selectfont, text=mk-green!85!black, inner sep=0.8pt},
 }

@@ -1,21 +1,25 @@
-% Thème C / C++ : barre de terminal bleu Solarized, catégories génériques.
-% Utilisé par C/c_cheat.tex et Cpp/cpp_cheat.tex.
+% Thème C : barre bleu Solarized avec le logo C, une icône par catégorie.
+% Utilisé par C/c_cheat.tex.
 
-% catégories (liseré de l'onglet, sous-titres)
-\colorlet{cat-syn}{mk-pink}      % syntaxe, opérateurs
-\colorlet{cat-typ}{mk-cyan}      % types, données
-\colorlet{cat-ctl}{mk-purple}    % contrôle, fonctions
-\colorlet{cat-ex}{mk-orange}     % exemples, motifs typiques
-\colorlet{cat-io}{mk-green}      % E/S, outils, tests
-\colorlet{cat-lib}{mk-yellow}    % bibliothèque, structures de données
+% catégories (onglet rempli, sous-titres) et leur icône (forme visible en N&B)
+\colorlet{cat-syn}{mk-pink}      \iconecat{syn}{F121}   % syntaxe, opérateurs      </>
+\colorlet{cat-typ}{mk-cyan}      \iconecat{typ}{F1B2}   % types, données           cube
+\colorlet{cat-ctl}{mk-purple}    \iconecat{ctl}{F126}   % contrôle, fonctions      embranchement
+\colorlet{cat-ex}{mk-orange}     \iconecat{ex}{F0EB}    % exemples, motifs         ampoule
+\colorlet{cat-io}{mk-green}      \iconecat{io}{F120}    % E/S, outils              terminal
+\colorlet{cat-lib}{mk-yellow}    \iconecat{lib}{F02D}   % bibliothèque, mémoire    livre
 \colorlet{cat}{cat-syn}
 
-% barre d'en-tête
+% couleurs des colonnes (rail + étiquette)
 \definecolor{sol-blue}{HTML}{1F78B8}   % bleu Solarized (268BD2) assombri pour l'impression
 \definecolor{sol-dark}{HTML}{073642}   % base02
+\colorlet{col-a}{sol-blue}
+\colorlet{col-b}{mk-purple}
+\colorlet{col-c}{mk-green!85!black}
+
+% barre d'en-tête
 \colorlet{barre-fond}{sol-blue}
 \colorlet{barre-bord}{sol-dark}
 \colorlet{barre-sep}{white!70!sol-blue}
-\renewcommand\iconebarre{F120}         % invite de terminal
-\renewcommand\tailleiconebarre{11}
-\let\entete\entetecouleur
+\renewcommand\iconebarre{E61E}         % logo C
+\renewcommand\tailleiconebarre{13}

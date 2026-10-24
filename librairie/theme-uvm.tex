@@ -1,15 +1,28 @@
-% Thème SystemVerilog vérification / UVM : celui de Verilog (les deux fiches forment une
-% paire) + catégories propres à la vérification et macros `uvm dans la légende.
+% Thème SystemVerilog vérification / UVM : celui de Verilog (les deux fiches forment
+% une paire) + barre violette « vérification » et catégories propres à la vérification.
 % Utilisé par UVM/uvm_cheat.tex.
 
 \input{\fiche@dir theme-verilog}
 
-% catégories propres à la fiche UVM
-\colorlet{cat-oop}{mk-purple}    % classes
-\colorlet{cat-rnd}{mk-pink}      % aléatoire, séquences
-\colorlet{cat-cov}{mk-yellow}    % couverture
-\colorlet{cat-sva}{mk-orange}    % assertions, vérification
-\colorlet{cat-uvm}{mk-cyan}      % architecture UVM
+% catégories propres à la fiche UVM et leur icône
+\colorlet{cat-oop}{mk-purple}    \iconecat{oop}{F0E8}   % classes                   organigramme
+\colorlet{cat-rnd}{mk-pink}      \iconecat{rnd}{F074}   % aléatoire, séquences      flèches croisées
+\colorlet{cat-cov}{mk-yellow}    \iconecat{cov}{F200}   % couverture                camembert
+\colorlet{cat-sva}{mk-orange}    \iconecat{sva}{F058}   % assertions                coche
+\colorlet{cat-uvm}{mk-cyan}      \iconecat{uvm}{F1B3}   % architecture UVM          cubes
+\colorlet{cat-obs}{mk-green}     \iconecat{obs}{F06E}   % observation (monitor, scoreboard) œil
 
-\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \leg{mk-cyan}{type} \ \leg{mk-green}{`macro \$système} \
+% couleurs des colonnes
+\definecolor{uvm-purple}{HTML}{5B3FA8}
+\definecolor{uvm-dark}{HTML}{392770}
+\colorlet{col-a}{uvm-purple}
+\colorlet{col-b}{hdl-teal}
+\colorlet{col-c}{mk-pink!80!black}
+
+% barre d'en-tête
+\colorlet{barre-fond}{uvm-purple}
+\colorlet{barre-bord}{uvm-dark}
+\colorlet{barre-sep}{white!65!uvm-purple}
+\renewcommand\iconebarre{F188}         % insecte : on cherche les bugs
+\renewcommand\legende{\leg{mk-pink}{mot-clé} \ \legn{mk-cyan}{type} \ \legn{mk-green}{`macro \$système} \
   \legit{mk-grey}{// commentaire} \ \legit{mk-purple}{«à remplir»} \ \sv}

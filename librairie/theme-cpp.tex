@@ -1,0 +1,25 @@
+% Thème C++ : barre bleu C++ avec le logo, une icône par catégorie.
+% Utilisé par Cpp/cpp_cheat.tex.
+
+% catégories (onglet rempli, sous-titres) et leur icône (forme visible en N&B)
+\colorlet{cat-syn}{mk-pink}      \iconecat{syn}{F121}   % syntaxe, opérateurs      </>
+\colorlet{cat-typ}{mk-cyan}      \iconecat{typ}{F1B2}   % types, données           cube
+\colorlet{cat-ctl}{mk-purple}    \iconecat{ctl}{F0E8}   % classes, héritage        organigramme
+\colorlet{cat-ex}{mk-orange}     \iconecat{ex}{F0EB}    % exemples, motifs         ampoule
+\colorlet{cat-io}{mk-green}      \iconecat{io}{F0EC}    % flux, E/S                flèches
+\colorlet{cat-lib}{mk-yellow}    \iconecat{lib}{F02D}   % bibliothèque, ressources livre
+\colorlet{cat}{cat-syn}
+
+% couleurs des colonnes (rail + étiquette)
+\definecolor{cpp-blue}{HTML}{00599C}   % bleu du logo C++
+\definecolor{cpp-dark}{HTML}{003A66}
+\colorlet{col-a}{cpp-blue}
+\colorlet{col-b}{mk-purple}
+\colorlet{col-c}{mk-green!85!black}
+
+% barre d'en-tête
+\colorlet{barre-fond}{cpp-blue}
+\colorlet{barre-bord}{cpp-dark}
+\colorlet{barre-sep}{white!60!cpp-blue}
+\renewcommand\iconebarre{E61D}         % logo C++
+\renewcommand\tailleiconebarre{13}

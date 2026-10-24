@@ -5,8 +5,9 @@ C, C++, Git, Python (base et avancé), Verilog, SystemVerilog/UVM, VHDL.
 
 ## Compiler
 
-Prérequis : XeLaTeX (TeX Live ou MiKTeX), GNU make, police
-[Hurmit Nerd Font](https://www.nerdfonts.com/font-downloads) installée.
+Prérequis : XeLaTeX (TeX Live ou MiKTeX), GNU make, polices
+[Hurmit Nerd Font](https://www.nerdfonts.com/font-downloads) et
+[IBM Plex Sans](https://github.com/IBM/plex) installées.
 
 ```sh
 make              # aide : liste des commandes et des dossiers
@@ -25,20 +26,22 @@ pas versionnés : ils se régénèrent avec `make all`.
 
 ```
 librairie/
-  fiche.sty          commun à toutes les fiches : police, tailles, couleurs, barre d'en-tête,
-                     encadrés, tableaux, colonnes, espacements
-  theme-<nom>.tex    propre à une fiche : catégories, légende, couleurs et icône de la barre
+  fiche.sty            commun à toutes les fiches : polices, tailles, couleurs, barre,
+                       encadrés, tableaux mesurés, colonnes nommées, espacements
+  theme-<nom>.tex      propre à une fiche : catégories et icônes, couleurs des colonnes,
+                       barre d'en-tête, légende, schémas particuliers
 <Dossier>/
-  <sujet>_cheat.tex  le contenu : \usepackage[<nom>]{../librairie/fiche} puis \input{langage}
-  langage.tex        mots-clés colorés (\lstdefinelanguage{CODE})
+  <sujet>.tex          le contenu : \usepackage[<nom>]{../librairie/fiche} puis \input{langage}
+  langage.tex          mots-clés colorés (\lstdefinelanguage{CODE})
+audit/                 audits de lisibilité (SYNTHESE.md, un rapport par fiche)
 ```
 
-- Changer la police, la barre du haut ou un espacement de **toutes** les fiches : `librairie/fiche.sty`.
+- Changer la police, la barre du haut ou un espacement de **toutes** les fiches :
+  `librairie/fiche.sty`.
 - Changer l'apparence d'**une** fiche : son `librairie/theme-<nom>.tex`.
-- Nouvelle fiche : un dossier `<Dossier>/<sujet>_cheat.tex` ; le Makefile la trouve tout seul.
+- Nouvelle fiche : un dossier `<Dossier>/<sujet>.tex` ; le Makefile la trouve tout seul.
 
-Après compilation, `grep "\[fiche\]" <fiche>.log` donne l'espace libre de chaque colonne
-(négatif = déborde).
-
-`Russe/` contient des fiches indépendantes de la librairie, non compilées par le Makefile
-(leurs PDF sont donc versionnés).
+La librairie (version 2.1) met en page proprement par construction (rythme vertical unique, tableaux
+mesurés, code qui ne déborde pas, collisions signalées). Après compilation,
+`grep "\[fiche\]" <fiche>.log` donne l'espace libre de chaque colonne (négatif = déborde) et
+les collisions éventuelles.

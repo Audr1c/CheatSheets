@@ -3,7 +3,7 @@
 #   make all          toutes les fiches
 #   make Git          les fiches d'un dossier (C Cpp Git python UVM Verilog VHDL ...)
 #   make liste        affiche les fiches trouvées
-#   make clean        supprime les fichiers auxiliaires (.aux .log .out) · clean-Git : un dossier
+#   make clean        supprime les fichiers auxiliaires (.aux .log .out .tab .listing) · clean-Git : un dossier
 #   make mrproper     supprime aussi les PDF des fiches
 # Une fiche = tout dossier/*.tex contenant \documentclass ; les dossiers de IGNORES
 # ne sont pas compilés. Chaque PDF dépend de sa fiche, de son langage*.tex et de la
@@ -11,14 +11,14 @@
 
 ENGINE  = xelatex
 FLAGS   = -interaction=nonstopmode -halt-on-error
-IGNORES = Russe librairie
+IGNORES = librairie
 
-LIB       = $(wildcard librairie/*)
+LIB       = $(filter %.sty %.tex,$(wildcard librairie/*))
 CANDIDATS = $(filter-out $(addsuffix /%,$(IGNORES)),$(wildcard */*.tex))
 FICHES    = $(foreach f,$(CANDIDATS),$(if $(findstring \documentclass,$(file <$f)),$f))
 PDFS      = $(FICHES:.tex=.pdf)
 DOSSIERS  = $(sort $(patsubst %/,%,$(dir $(FICHES))))
-auxiliaires = $(foreach e,aux log out,$(1:.tex=.$e))
+auxiliaires = $(foreach e,aux log out tab listing,$(1:.tex=.$e))
 
 # Shell réellement utilisé : cmd.exe garde les guillemets de echo, sh les retire
 ifeq ($(shell echo "x"),"x")
@@ -36,7 +36,7 @@ aide:
 	$(info $(vide)  make all          compile toutes les fiches)
 	$(info $(vide)  make <dossier>    compile les fiches d'un dossier : $(DOSSIERS))
 	$(info $(vide)  make liste        affiche les fiches trouvees)
-	$(info $(vide)  make clean        supprime les fichiers auxiliaires (.aux .log .out))
+	$(info $(vide)  make clean        supprime les fichiers auxiliaires (.aux .log .out .tab .listing))
 	$(info $(vide)  make clean-<dossier>  idem pour un seul dossier)
 	$(info $(vide)  make mrproper     supprime aussi les PDF des fiches)
 	$(info Style commun : librairie/fiche.sty - theme d'une fiche : librairie/theme-<nom>.tex)
