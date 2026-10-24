@@ -2,17 +2,18 @@
 % Socle commun C / C++ : tout ce qui est partagé (types, opérateurs, contrôle, pointeurs,
 % mémoire, préprocesseur, compilation) est ici ; la fiche C++ ne contient que ce qu'ajoute le C++.
 % Compiler : make (ici ou à la racine), ou xelatex c_cheat.tex — une seule passe suffit
-% Apparence : ../librairie (fiche.sty commun + thème). Macros de contenu :
-%   colonne (3 par page, séparées par \colbreak) · bloc{titre}{cat}
-%   catégories : syn typ ctl ex io lib (couleurs dans le thème)
-%   code (listing numéroté) · \V|...| code en ligne · «...» dans le code = à remplir
-%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT}
-%   optab[l1] étiquette | texte · tab3[l1]{l2} étiquette | code | remarque
+% Apparence : ../librairie (fiche.sty + theme-c.tex). Macros de contenu :
+%   colonne[titre][couleur] (3 par page, séparées par \colbreak) · bloc{titre}{cat}
+%   catégories : syn typ ctl ex io lib (couleurs et icônes dans le thème)
+%   code · \V|...| code en ligne · «...» dans le code = à remplir
+%   \sub sous-titre · \note remarque · \piege piège · \badge{TXT} · schema
+%   optab étiquette | texte · tab3 étiquette | code | remarque · compare · grille{n}
+%   (largeurs mesurées par la librairie : celles écrites entre [] et {} sont ignorées)
 % Le code est en police à chasse fixe : les commentaires sont alignés à la main
 % (attention : les « » ne sont pas affichés, ils ne comptent pas dans l'alignement).
-% Après compilation : grep "\[fiche\]" c_cheat.log donne l'espace libre par colonne.
+% Après compilation : grep "\[fiche\]" c_cheat.log (place libre, collisions).
 \documentclass{article}
-\usepackage[c]{../librairie/fiche}   % apparence : ../librairie/fiche.sty + theme-c.tex
+\usepackage[c]{../librairie/fiche}   % apparence : ../librairie (fiche.sty + theme-c.tex)
 \input{langage}   % coloration syntaxique : \lstdefinelanguage{CODE}
 
 \begin{document}
@@ -22,7 +23,7 @@
 \entete{Langage C}{recto · le langage}
 \noindent
 % ======================= colonne 1 : types et opérateurs =======================
-\begin{colonne}
+\begin{colonne}[types · opérateurs][col-a]
 \begin{bloc}{Types de base}{typ}
 \begin{tab3}[14mm]{27mm}
 Entiers     & \V|char short int|    & 1 · 2 · 4 octets (typique) \\
@@ -31,13 +32,13 @@ Entiers     & \V|char short int|    & 1 · 2 · 4 octets (typique) \\
             & \V|unsigned int|      & $\geq 0$, calcul modulo $2^n$ \\
 Fixes       & \V|int8_t uint32_t|   & taille exacte · \V|<stdint.h>| \\
 Réels       & \V|float double|      & 4 · 8 octets (IEEE 754) \\
-Booléen     & \V|bool true false|   & \V|<stdbool.h>| · 0 = faux \\
+Booléen     & \V|bool true false|   & \V|<stdbool.h>| (mots-clés en C23) · 0 = faux \\
 Tailles     & \V|size_t|            & non signé, type de \V|sizeof| \\
 Vide        & \V|void|              & pas de valeur · \V|void *| générique
 \end{tab3}
 \sub{Littéraux}
 \begin{code}
-42   052   0x2A   0b101010    // déc, oct, hexa, bin C23
+42   052   0x2A   0b101010    // déc, oct, hexa, bin (C23)
 42u  42L   42UL   42LL        // suffixes de type
 3.14  3.14f  1e-3             // double, float, 0.001
 'A'  '\n'  '\0'  '\x41'       // caractères (= entiers)
@@ -78,18 +79,19 @@ mélange signé / non signé $\Rightarrow$ non signé.}
 \piege{\V|x & MASK == 0| se lit \V|x & (MASK == 0)| : parenthéser les opérations bit à bit.}
 \end{bloc}
 
-\begin{bloc}{Bibliothèque standard}{lib}
-\begin{tab3}[15.5mm]{25mm}
-<math.h>   & \V|sqrt pow fabs|      & lier avec \V|-lm| \\
-           & \V|floor ceil round|   & \V|sin cos| en radians \\
-<stdlib.h> & \V|srand(time(NULL))|  & graine, une seule fois \\
-           & \V|rand() % n|         & entier de 0 à n$-$1 \\
-<assert.h> & \V|assert(p != NULL)|  & arrête le programme si faux
-\end{tab3}
+\begin{bloc}{Pièges classiques}{syn}
+\begin{optab}[2mm]
+· & \V|if (x = 0)| affecte : écrire \V|if (x == 0)| \\
+· & \V|;| après \V|if (...)| ou \V|for (...)| : corps vide \\
+· & \V|switch| sans \V|break| : enchaîne les cas \\
+· & dépassement d'un \V|int| signé : comportement indéfini \\
+· & \V|scanf("%d", x)| : oubli du \V|&| \\
+· & chaîne sans place pour le \V|'\0'| final
+\end{optab}
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 2 : contrôle et fonctions =======================
-\begin{colonne}
+\begin{colonne}[contrôle · fonctions][col-b]
 \begin{bloc}{Structures de contrôle}{ctl}
 \begin{code}
 if («cond») {                 // cond : 0 = faux, sinon vrai
@@ -159,7 +161,7 @@ int compteur(void) {
 \end{bloc}
 \end{colonne}\colbreak
 % ======================= colonne 3 : pointeurs, tableaux, chaînes =======================
-\begin{colonne}
+\begin{colonne}[pointeurs · chaînes][col-c]
 \begin{bloc}{Pointeurs}{typ}
 \begin{code}
 int x = 5;
@@ -209,21 +211,22 @@ void g(int m[][4], int rows); // 2D : colonnes fixées
 bornes : indices de 0 à n$-$1.}
 \end{bloc}
 
-\begin{bloc}{<string.h> et conversions}{lib}
-\begin{tab3}[0mm]{24mm}
- & \V|strlen(s)|        & longueur, sans le \V|'\0'| \\
- & \V|strcpy(d, s)|     & copie (d assez grand !) \\
- & \V|strncpy(d, s, n)| & \V|'\0'| non garanti \\
- & \V|strcat(d, s)|     & ajoute s à la fin de d \\
- & \V|strcmp(a, b)|     & $<0$, 0, $>0$ \\
- & \V|strchr strstr|    & recherche $\to$ pointeur ou NULL \\
- & \V|memcpy(d, s, n)|  & copie n octets \\
- & \V|memmove|          & idem, zones qui se chevauchent \\
- & \V|memset(p, v, n)|  & remplit n octets avec v \\
- & \V|snprintf|         & formate dans un buffer borné \\
- & \V|strtol(s, &e, b)| & chaîne $\to$ long, base b \\
- & \V|atoi atof|        & idem, sans détection d'erreur \\
- & \V|isdigit toupper|  & \V|<ctype.h>|
+\begin{bloc}{Bibliothèque standard}{lib}
+\begin{tab3}[15mm]{24mm}
+<string.h> & \V|strlen(s)|        & longueur sans le \V|'\0'| \\
+           & \V|strcpy(d, s)|     & copie (d assez grand) \\
+           & \V|strncpy(d, s, n)| & \V|'\0'| non garanti \\
+           & \V|strcat(d, s)|     & ajoute s à la fin de d \\
+           & \V|strcmp(a, b)|     & $<0$, 0, $>0$ \\
+           & \V|strchr strstr|    & $\to$ pointeur ou NULL \\
+           & \V|memcpy memmove|   & copie n octets ; recouvrement : move \\
+           & \V|memset(p, v, n)|  & n octets mis à v \\
+<stdlib.h> & \V|strtol(s, &e, b)| & chaîne $\to$ long, base b \\
+           & \V|rand() % n|       & entier de 0 à n$-$1 \\
+           & \V|srand(time(NULL))| & graine, une seule fois \\
+<math.h>   & \V|sqrt pow fabs|    & lier avec \V|-lm| \\
+<ctype.h>  & \V|isdigit toupper|  & test d'un caractère \\
+<assert.h> & \V|assert(p != NULL)| & arrête si faux
 \end{tab3}
 \piege{\V|a == b| compare les adresses, pas le texte : \V|strcmp(a, b) == 0|.}
 \end{bloc}
@@ -235,8 +238,8 @@ bornes : indices de 0 à n$-$1.}
 \newpage
 \entete{Langage C}{verso · données, mémoire et outils}
 \noindent
-% ======================= colonne 1 : types composés, préprocesseur =======================
-\begin{colonne}
+% ======================= colonne 4 : types composés, préprocesseur, bits =======================
+\begin{colonne}[données · macros][col-a]
 \begin{bloc}{struct, union, enum}{typ}
 \begin{code}
 struct point { int x, y; };
@@ -266,6 +269,12 @@ struct ctrl {                 // champs de bits
 struct s1 { char c; int i; char d; };  // sizeof = 12
 struct s2 { int i; char c; char d; };  // sizeof = 8
 \end{code}
+\begin{schema}[x=1mm,y=1mm,font=\fontcode]
+  \foreach \i in {1,2,3,9,10,11} \fill[gutter!35] (\i*3.4,0) rectangle +(3.4,3.4);
+  \foreach \i/\c in {0/c,4/i,5/i,6/i,7/i,8/d} \node[fill=cat!20,minimum size=3.4mm,inner sep=0pt,anchor=south west] at (\i*3.4,0) {\c};
+  \draw[trait,line width=0.4pt] (0,0) grid[step=3.4] (40.8,3.4);
+  \node[anchor=west,text=note,font=\fontbloc] at (42,1.7) {s1 : 12 octets dont 6 de bourrage};
+\end{schema}
 \note{Chaque champ est aligné sur sa taille, la structure sur son plus grand champ :
 ranger les champs du plus grand au plus petit.}
 \end{bloc}
@@ -300,9 +309,18 @@ GPIO_ODR |= 1u << 5;          // registre mappé
 \end{code}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 2 : mémoire =======================
-\begin{colonne}
+% ======================= colonne 5 : mémoire =======================
+\begin{colonne}[mémoire][col-b]
 \begin{bloc}{Zones mémoire}{lib}
+\begin{schema}[x=1mm,y=1mm,font=\fontcode]
+  \foreach \x/\w/\n in {0/9/.text,9/12/.rodata,21/9/.data,30/8/.bss,38/10/tas}
+    \node[draw=trait,fill=cat!20,minimum width=\w mm,minimum height=4.2mm,inner sep=0pt,anchor=west] at (\x,0) {\n};
+  \node[draw=trait,fill=cat!20,minimum width=10mm,minimum height=4.2mm,inner sep=0pt,anchor=east] at (78,0) {pile};
+  \draw[-{Latex[length=1.4mm]},draw=cat,line width=0.7pt] (49,0) -- (56,0);
+  \draw[-{Latex[length=1.4mm]},draw=cat,line width=0.7pt] (67,0) -- (60,0);
+  \draw[-{Latex[length=1.2mm]},draw=gutter] (0,-3.8) -- (78,-3.8)
+    node[midway,fill=white,text=note,inner sep=1pt,font=\fontbloc] {adresses croissantes};
+\end{schema}
 \begin{optab}[13mm]
 Pile    & locales, paramètres ; libérée en fin de bloc ; quelques Mo \\
 Tas     & \V|malloc| / \V|free| : libéré à la main \\
@@ -326,18 +344,18 @@ if (tmp != NULL) t = tmp;         // échec : t intact
 free(t);
 t = NULL;                         // anti-pointeur pendant
 \end{code}
+\piege{un \V|free| par \V|malloc| ; jamais deux fois ; ne plus utiliser la zone après
+\V|free| ; jamais sur une variable de pile.}
 \sub{Matrice dynamique}
 \begin{code}
 int **m = malloc(rows * sizeof *m);
 for (int i = 0; i < rows; i++)
     m[i] = malloc(cols * sizeof **m);
-m[i][j] = 0;
+m[i][j] = 0;                      // accès comme en 2D
 for (int i = 0; i < rows; i++)    // libérer dans
     free(m[i]);                   //   l'ordre inverse
 free(m);
 \end{code}
-\piege{un \V|free| par \V|malloc| ; jamais deux fois ; jamais après usage ;
-jamais sur une variable de pile.}
 \sub{Pointeur pendant}
 \begin{code}
 int *mauvais(void) {
@@ -356,14 +374,11 @@ node_t *push(node_t *head, int v) {
     n->next = head;
     return n;                     // nouvelle tête
 }
-
 node_t *l = NULL;                 // liste vide
 l = push(l, 1);
 l = push(l, 2);                   // l : 2 -> 1
-
 for (node_t *p = l; p != NULL; p = p->next)
     printf("%d ", p->val);
-
 while (l != NULL) {               // libération
     node_t *suiv = l->next;
     free(l);
@@ -372,9 +387,9 @@ while (l != NULL) {               // libération
 \end{code}
 \end{bloc}
 \end{colonne}\colbreak
-% ======================= colonne 3 : E/S, compilation, bits =======================
-\begin{colonne}
-\begin{bloc}{Entrées / sorties <stdio.h>}{io}
+% ======================= colonne 6 : E/S, compilation =======================
+\begin{colonne}[E/S · compilation][col-c]
+\begin{bloc}{E/S <stdio.h>}{io}
 \begin{tab3}[0mm]{22mm}
  & \V|%d %u %ld %lld| & int, unsigned, long, long long \\
  & \V|%zu %p|         & size\_t, pointeur \\
@@ -382,12 +397,12 @@ while (l != NULL) {               // libération
  & \V|%f %e %g|       & double (float promu) \\
  & \V|%c %s %%|       & caractère, chaîne, \% \\
  & \V|%5d %-5d %05d|  & largeur, à gauche, zéros \\
- & \V|%.2f %8.3f|     & précision \\
- & \V|%#x|            & préfixe \V|0x|
+ & \V|%.2f %8.3f|     & précision · \V|%#x| : préfixe \V|0x|
 \end{tab3}
 \begin{code}
 printf("x=%d y=%.2f\n", x, y);
 fprintf(stderr, "erreur %d\n", code);
+snprintf(buf, sizeof buf, "%d", x);   // borné
 int nb = scanf("%d %lf", &i, &d); // nb lus ; %lf : double
 int c = getchar();            // int, car EOF = -1
 \end{code}
@@ -404,7 +419,7 @@ fclose(f);
 \end{code}
 \end{bloc}
 
-\begin{bloc}{Compilation}{io}
+\begin{bloc}{Compilation et débogage}{io}
 \begin{tab3}[14mm]{12mm}
 Préproc. & \V|gcc -E| & \V|#include|, macros $\to$ \V|.i| \\
 Compil.  & \V|gcc -S| & C $\to$ assembleur \V|.s| \\
@@ -412,7 +427,7 @@ Assemb.  & \V|gcc -c| & $\to$ objet \V|.o| \\
 Liens    & \V|gcc|    & \V|.o| + bibliothèques $\to$ exécutable
 \end{tab3}
 \begin{code}
-gcc -Wall -Wextra -std=c99 -g -o prog main.c mod.c
+gcc -Wall -Wextra -std=c17 -g -o prog main.c mod.c
 gcc -c mod.c                  // -> mod.o seul
 gcc main.o mod.o -lm -o prog  // + libm (math.h)
 \end{code}
@@ -420,10 +435,9 @@ gcc main.o mod.o -lm -o prog  // + libm (math.h)
  & \V|-O0 -O2|       & optimisation \\
  & \V|-I dir -L dir| & chemins des .h, des .a / .so \\
  & \V|-DNOM=val|     & \V|#define| depuis la ligne de commande \\
- & \V|-fsanitize=address| & débordements, fuites \\
- & \V|gdb valgrind|  & débogueur · fuites mémoire
+ & \V|-fsanitize=address| & débordements, fuites
 \end{tab3}
-\sub{Module : en-tête}
+\sub{module.h}
 \begin{code}
 #ifndef MODULE_H              // garde d'inclusion
 #define MODULE_H
@@ -431,17 +445,22 @@ extern int compteur;          // déclaration seule
 int api(int x);               // prototypes publics
 #endif
 \end{code}
-\end{bloc}
-
-\begin{bloc}{Pièges classiques}{syn}
-\begin{optab}[2mm]
-· & \V|if (x = 0)| affecte : écrire \V|if (x == 0)| \\
-· & \V|;| après \V|if (...)| ou \V|for (...)| : corps vide \\
-· & \V|switch| sans \V|break| : enchaîne les cas \\
-· & dépassement d'un \V|int| signé : comportement indéfini \\
-· & \V|scanf("%d", x)| : oubli du \V|&| \\
-· & chaîne sans place pour le \V|'\0'| final
-\end{optab}
+\sub{Makefile}
+\begin{code}
+CFLAGS = -Wall -Wextra -std=c17 -g
+prog: main.o mod.o            // cible: dépendances
+    $(CC) $^ -lm -o $@        // TAB devant la commande
+%.o: %.c mod.h                // règle générique
+    $(CC) $(CFLAGS) -c $<     // $< 1re dépendance
+\end{code}
+\sub{gdb et valgrind}
+\begin{tab3}{}
+ & \texttt{gdb ./prog}            & programme compilé avec \V|-g| \\
+ & \texttt{break f} · \texttt{run} & point d'arrêt dans f, lancer \\
+ & \texttt{next} · \texttt{step}  & ligne suivante · entrer dans l'appel \\
+ & \texttt{print x} · \texttt{bt} & valeur · pile d'appels \\
+ & \texttt{valgrind ./prog}       & fuites : \texttt{-{}-leak-check=full}
+\end{tab3}
 \end{bloc}
 \end{colonne}
 \end{document}
