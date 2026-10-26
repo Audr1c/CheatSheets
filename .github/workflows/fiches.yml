@@ -23,25 +23,30 @@ jobs:
   fiches:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Installer XeLaTeX et IBM Plex Sans
+      - name: Installer XeLaTeX
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             texlive-xetex texlive-latex-extra texlive-pictures texlive-fonts-recommended \
-            lmodern fonts-ibm-plex fontconfig make unzip
+            lmodern fontconfig make unzip
 
-      - name: Installer Hurmit Nerd Font
+      - name: Installer IBM Plex Sans et Hurmit Nerd Font
         run: |
-          mkdir -p ~/.local/share/fonts/hurmit
+          # IBM Plex est chargée par nom de fichier (kpathsea) : dans TEXMFHOME
+          plex=~/texmf/fonts/opentype/ibm-plex
+          mkdir -p "$plex" ~/.local/share/fonts/hurmit
+          curl -fsSL -o /tmp/plex.zip \
+            'https://github.com/IBM/plex/releases/download/%40ibm%2Fplex-sans%401.1.0/ibm-plex-sans.zip'
+          unzip -o -q -j /tmp/plex.zip 'ibm-plex-sans/fonts/complete/otf/*.otf' -d "$plex"
+          # Hurmit est chargée par nom de famille (fontconfig)
           curl -fsSL -o /tmp/Hermit.zip \
             https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hermit.zip
           unzip -o -q /tmp/Hermit.zip -d ~/.local/share/fonts/hurmit
           fc-cache -f
-          fc-list : family | grep -E 'Hurmit Nerd Font|IBM Plex Sans' | sort -u
-          # fontspec charge IBM Plex par nom de fichier : kpathsea cherche dans OSFONTDIR
-          echo "OSFONTDIR=/usr/share/fonts//:$HOME/.local/share/fonts//" >> "$GITHUB_ENV"
+          kpsewhich IBMPlexSans-Regular.otf
+          fc-list : family | grep 'Hurmit Nerd Font' | sort -u
 
       - name: Compiler les fiches
         run: make all
@@ -54,13 +59,13 @@ jobs:
 
       - name: Journaux de compilation
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: logs
           path: '*/*.log'
 
       - name: PDF du run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: fiches-pdf
           path: pdf/*.pdf
