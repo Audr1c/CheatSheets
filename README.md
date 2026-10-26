@@ -19,8 +19,21 @@ make mrproper     # aussi les PDF
 ```
 
 Le Makefile fonctionne sous Linux et sous Windows (`sh` ou `cmd.exe`). On peut aussi lancer
-`make` dans un dossier de fiche, ou `xelatex <fiche>.tex` depuis ce dossier. Les PDF ne sont
-pas versionnés : ils se régénèrent avec `make all`.
+`make` dans un dossier de fiche, ou `xelatex <fiche>.tex` depuis ce dossier. Les PDF compilés
+localement ne sont pas versionnés : ils se régénèrent avec `make all`.
+
+## PDF publiés (version release)
+
+GitHub Actions ([`.github/workflows/fiches.yml`](.github/workflows/fiches.yml)) compile les fiches :
+
+- à chaque push : vérifie que tout compile, PDF téléchargeables dans l'artefact `fiches-pdf` du run ;
+- à chaque tag `v*` : publie la version release, c'est-à-dire une
+  [GitHub Release](../../releases/latest) avec les PDF, et le dossier [`pdf/`](pdf/) mis à jour sur `main`.
+
+```sh
+git tag v1.0
+git push origin v1.0   # puis git pull : le bot ajoute les PDF dans pdf/
+```
 
 ## Organisation : le style est séparé du contenu
 

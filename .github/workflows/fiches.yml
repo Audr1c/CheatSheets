@@ -1,0 +1,93 @@
+# Compile les fiches sur GitHub (XeLaTeX + polices IBM Plex Sans et Hurmit Nerd Font)
+#   push (toute branche)  vérifie que toutes les fiches compilent, PDF en artefact du run
+#   tag v*                publie la version « release » : une GitHub Release avec les PDF
+#                         et le dossier pdf/ mis à jour sur main
+#   Actions > Fiches PDF > Run workflow : compilation à la demande
+name: Fiches PDF
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+    paths:
+      - '**.tex'
+      - '**.sty'
+      - 'Makefile'
+      - '.github/workflows/fiches.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fiches:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer XeLaTeX et IBM Plex Sans
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-xetex texlive-latex-extra texlive-pictures texlive-fonts-recommended \
+            lmodern fonts-ibm-plex fontconfig make unzip
+
+      - name: Installer Hurmit Nerd Font
+        run: |
+          mkdir -p ~/.local/share/fonts/hurmit
+          curl -fsSL -o /tmp/Hermit.zip \
+            https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hermit.zip
+          unzip -o -q /tmp/Hermit.zip -d ~/.local/share/fonts/hurmit
+          fc-cache -f
+          fc-list : family | grep -E 'Hurmit Nerd Font|IBM Plex Sans' | sort -u
+          # fontspec charge IBM Plex par nom de fichier : kpathsea cherche dans OSFONTDIR
+          echo "OSFONTDIR=/usr/share/fonts//:$HOME/.local/share/fonts//" >> "$GITHUB_ENV"
+
+      - name: Compiler les fiches
+        run: make all
+
+      - name: Rassembler les PDF dans pdf/
+        run: |
+          mkdir -p pdf
+          for f in $(make -s liste); do cp "${f%.tex}.pdf" pdf/; done
+          ls -l pdf
+
+      - name: Journaux de compilation
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: '*/*.log'
+
+      - name: PDF du run
+        uses: actions/upload-artifact@v4
+        with:
+          name: fiches-pdf
+          path: pdf/*.pdf
+
+      - name: Publier la release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" pdf/*.pdf --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" pdf/*.pdf \
+              --title "Fiches $GITHUB_REF_NAME" --generate-notes
+          fi
+
+      - name: Mettre à jour pdf/ sur main
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          git fetch --depth=1 origin main
+          git worktree add /tmp/main FETCH_HEAD
+          rm -rf /tmp/main/pdf
+          cp -r pdf /tmp/main/pdf
+          cd /tmp/main
+          git add -f -A pdf
+          if git diff --cached --quiet; then echo "pdf/ déjà à jour"; exit 0; fi
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898283+github-actions[bot]@users.noreply.github.com' \
+              commit -m "PDF de la release $GITHUB_REF_NAME"
+          git push origin HEAD:main
