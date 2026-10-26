@@ -25,14 +25,28 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # TeX Live depuis CTAN (pas le miroir apt, parfois très lent), ~/texlive en cache
+      # Paquets relevés avec xelatex -recorder ; nouveau \usepackage → l'ajouter ici
       - name: Installer XeLaTeX
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-xetex texlive-latex-extra texlive-pictures texlive-fonts-recommended \
-            lmodern fontconfig make unzip
+        uses: zauguin/install-texlive@v4
+        with:
+          packages: >
+            scheme-basic xetex lm fontspec geometry xcolor colortbl tools listings
+            pgf tcolorbox tikzfill pdfcol environ trimspaces etoolbox varwidth
+            amsmath l3packages l3kernel l3backend iftex ltxcmds infwarerr
+            graphics graphics-cfg graphics-def
+
+      - name: Polices en cache
+        id: polices
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/texmf/fonts/opentype/ibm-plex
+            ~/.local/share/fonts/hurmit
+          key: polices-plex-1.1.0-hurmit-v1
 
       - name: Installer IBM Plex Sans et Hurmit Nerd Font
+        if: steps.polices.outputs.cache-hit != 'true'
         run: |
           # IBM Plex est chargée par nom de fichier (kpathsea) : dans TEXMFHOME
           plex=~/texmf/fonts/opentype/ibm-plex
@@ -44,6 +58,9 @@ jobs:
           curl -fsSL -o /tmp/Hermit.zip \
             https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hermit.zip
           unzip -o -q /tmp/Hermit.zip -d ~/.local/share/fonts/hurmit
+
+      - name: Vérifier les polices
+        run: |
           fc-cache -f
           kpsewhich IBMPlexSans-Regular.otf
           fc-list : family | grep 'Hurmit Nerd Font' | sort -u
