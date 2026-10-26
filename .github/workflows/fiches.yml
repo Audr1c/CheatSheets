@@ -33,7 +33,7 @@ jobs:
           packages: >
             scheme-basic xetex lm fontspec geometry xcolor colortbl tools listings
             pgf tcolorbox tikzfill pdfcol environ trimspaces etoolbox varwidth
-            amsmath l3packages l3kernel l3backend iftex ltxcmds infwarerr
+            amsmath l3packages l3kernel iftex ltxcmds infwarerr
             graphics graphics-cfg graphics-def
 
       - name: Polices en cache
